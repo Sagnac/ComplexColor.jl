@@ -34,7 +34,7 @@ plot = image!(axis, color_matrix)
 grid = GridLayout(fig[1,2]; tellheight = false)
 Colorbar(grid[1,1]; colormap = :gray1, limits = (0, maximum(abs.(s))))
 Label(grid[2,1], L"|s|"; fontsize = 15)
-Colorbar(grid[1,2]; colormap = :hsv, limits = (-π, π), ticks = colorbar_ticks)
+Colorbar(grid[1,2]; colormap = hsl, limits = (-π, π), ticks = colorbar_ticks)
 Label(grid[2,2], L"Arg(s)"; fontsize = 15)
 fig
 ```

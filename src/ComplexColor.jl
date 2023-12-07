@@ -1,6 +1,6 @@
 module ComplexColor
 
-export complex_color
+export complex_color, hsl
 
 using Images
 
@@ -30,5 +30,8 @@ function complex_color(A::AbstractArray{<:Complex{<:Real}})
     S = ones(eltype(H), size(H))
     clamp01nan!(map(RGB, HSL.(H, S, L)))
 end
+
+"HSL colormap"
+hsl = map(RGB, HSL(i, 1.0, 0.5) for i = range(-60, 300, 2^10))
 
 end
