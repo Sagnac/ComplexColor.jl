@@ -1,10 +1,15 @@
 `complex_color(A)` converts an array of complex numbers into an image matrix of RGB values using a hue-lightness color mapping for the phase and modulus.
 
-# Plotting example
+# Installation
 
 ```julia
 using Pkg
 Pkg.add(url="https://github.com/Sagnac/ComplexColor.jl")
+```
+
+# Plotting example
+
+```julia
 using ComplexColor
 using GLMakie # assumes previous installation of this plotting package
 
