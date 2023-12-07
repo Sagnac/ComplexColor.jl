@@ -25,15 +25,10 @@ julia> complex_color(z)
 function complex_color(A::AbstractArray{<:Complex{<:Real}})
     r = abs.(A)
     ϕ = angle.(A)
-    H = @. mod(ϕ + 2π/3, 2π)
+    H = @. rad2deg(mod(ϕ + 2π/3, 2π))
     L = @. 2atan(r)/π
-    HLS_to_RGB(H, L)
-end
-
-function HLS_to_RGB(H, L)
-    k = (@.(mod(n + H * 6 / π, 12)) for n = (0, 8, 4))
-    R, G, B = [@.(L - min(L, 1 - L) * max(-1, min(i - 3, 9 - i, 1))) for i in k]
-    clamp01nan!(map(RGB, R, G, B))
+    S = ones(eltype(H), size(H))
+    clamp01nan!(map(RGB, HSL.(H, S, L)))
 end
 
 end
