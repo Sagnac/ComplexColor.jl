@@ -28,7 +28,14 @@ function complex_color(A::AbstractArray{<:Complex{<:Real}})
     H = @. rad2deg(mod(ϕ + 2π/3, 2π))
     L = @. 2atan(r)/π
     S = ones(eltype(H), size(H))
-    clamp01nan!(map(RGB, HSL.(H, S, L)))
+    clamp01nan1!(map(RGB, HSL.(H, S, L)))
+end
+
+function clamp01nan1!(A)
+    for (i, v) ∈ pairs(A)
+        A[i] = mapc(v -> isnan(v) ? oneunit(v) : clamp(v, zero(v), oneunit(v)), v)
+    end
+    A
 end
 
 "HSL colormap"
