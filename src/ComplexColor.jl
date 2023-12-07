@@ -58,11 +58,8 @@ function complex_plot(x::Lims, y::Lims, s::ComplexArray; title::Str = L"s")
                 ylabel = L"Im(z)", ylabelsize = 16,
                 xticks, yticks)
     plot = image!(axis, color_matrix)
-    grid = GridLayout(fig[1,2]; tellheight = false)
-    Colorbar(grid[1,1]; colormap = :gray1, ticks = (0:1, [L"0", L"\infty"]))
-    Label(grid[2,1], L"|s|"; fontsize = 15)
-    Colorbar(grid[1,2]; colormap = hsl, limits = (-π, π), ticks = arg_ticks)
-    Label(grid[2,2], L"Arg(s)"; fontsize = 15)
+    Colorbar(fig[1,2]; colormap = hsl, limits = (-π, π), ticks = arg_ticks,
+             label = "Arg(s)")
     fig
 end
 
