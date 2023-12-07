@@ -23,6 +23,9 @@ color_matrix = complex_color(s)
 nticks = 5
 ticklabels = Makie.latexstring.(range(lims[begin], lims[end], nticks))
 xticks = yticks = (range(1, length(lims), nticks), ticklabels)
+colorbar_tick_values = [-π, -π/2, 0, π/2, π]
+colorbar_tick_labels = [L"-\pi", L"-\frac{\pi}{2}", L"0", L"\frac{\pi}{2}", L"\pi"]
+colorbar_ticks = (colorbar_tick_values, colorbar_tick_labels)
 fig = Figure()
 axis = Axis(fig[1,1]; title = L"s = z^7 - 1", titlesize = 21,
             xlabel = L"Re(z)", xlabelsize = 16, ylabel = L"Im(z)", ylabelsize = 16,
@@ -31,8 +34,7 @@ plot = image!(axis, color_matrix)
 grid = GridLayout(fig[1,2]; tellheight = false)
 Colorbar(grid[1,1]; colormap = :gray1, limits = (0, maximum(abs.(s))))
 Label(grid[2,1], L"|s|"; fontsize = 15)
-Colorbar(grid[1,2]; colormap = :hsv, limits = (-π/2, π/2),
-         ticks = ([-π/2, 0, π/2], [L"-\frac{\pi}{2}", L"0", L"\frac{\pi}{2}"]))
+Colorbar(grid[1,2]; colormap = :hsv, limits = (-π, π), ticks = colorbar_ticks)
 Label(grid[2,2], L"Arg(s)"; fontsize = 15)
 fig
 ```
