@@ -1,7 +1,7 @@
 name = "ComplexColor"
 uuid = "58ce148e-7931-477b-ae5e-998318829365"
 authors = ["Sagnac"]
-version = "0.2.0"
+version = "0.3.0"
 
 [deps]
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
