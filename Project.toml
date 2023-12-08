@@ -1,8 +1,12 @@
 name = "ComplexColor"
 uuid = "58ce148e-7931-477b-ae5e-998318829365"
 authors = ["Sagnac"]
-version = "0.3.0"
+version = "0.4.0"
 
 [deps]
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
+
+[compat]
+GLMakie = "0.9.2"
+Images = "0.26.0"
