@@ -29,10 +29,10 @@ julia> complex_color(z)
 ```
 """
 function complex_color(A::ComplexArray)
-    r = abs.(A)
+    r2 = abs2.(A)
     ϕ = angle.(A)
     H = @. rad2deg(mod(ϕ + 2π/3, 2π))
-    L = @. 2atan(r)/π
+    L = @. r2 / (r2 + 1)
     S = ones(eltype(H), size(H))
     clamp01nan1!(map(RGB, HSL.(H, S, L)))
 end
