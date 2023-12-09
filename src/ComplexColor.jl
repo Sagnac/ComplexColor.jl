@@ -1,6 +1,6 @@
 module ComplexColor
 
-export complex_color, complex_plot, hsl, latexstring, var"@L_str"
+export complex_color, complex_plot, var"@L_str"
 
 using Images
 using GLMakie
@@ -50,8 +50,7 @@ function complex_plot(x::Lims, y::Lims, s::ComplexArray; title::Str = L"s")
     yticklabels = latexstring.(range(y[begin], y[end], nticks))
     xticks = (range(1, xlen, nticks), xticklabels)
     yticks = (range(1, ylen, nticks), yticklabels)
-    arg_tick_labels = [L"-\pi", L"-\frac{\pi}{2}", L"0", L"\frac{\pi}{2}", L"\pi"]
-    arg_ticks = (-π:π/2:π, arg_tick_labels)
+    arg_ticks = (-π:π:π, [L"-\pi", L"0", L"\pi"])
     fig = Figure()
     axis = Axis(fig[1,1]; title, titlesize = 21,
                 xlabel = L"Re(z)", xlabelsize = 16,
@@ -71,6 +70,6 @@ function clamp01nan1!(img::AbstractArray{<:Colorant})
 end
 
 "HSL colormap"
-hsl = map(RGB, HSL(i, 1.0, 0.5) for i = range(-60, 300, 2^10))
+const hsl = map(RGB, HSL(i, 1.0, 0.5) for i = range(-60, 300, 2^10))
 
 end
