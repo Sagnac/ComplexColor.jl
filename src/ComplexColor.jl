@@ -63,11 +63,11 @@ function complex_plot(x::Lims, y::Lims, s::ComplexArray; title::Str = L"s")
     fig
 end
 
-function clamp01nan1!(A)
-    for (i, v) ∈ pairs(A)
-        A[i] = mapc(v -> isnan(v) ? oneunit(v) : clamp(v, zero(v), oneunit(v)), v)
+function clamp01nan1!(img::AbstractArray{<:Colorant})
+    for (i, v) ∈ pairs(img)
+        img[i] = mapc(v -> isnan(v) ? oneunit(v) : clamp01(v), v)
     end
-    A
+    img
 end
 
 "HSL colormap"
