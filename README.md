@@ -1,5 +1,7 @@
 # ComplexColor.jl
 
+<img src="./images/complex_plot.png" width="600" height="450">
+
 `complex_color(s)` converts an array of complex numbers into an image matrix of RGB values using a hue-lightness color mapping for the phase and modulus.
 
 `complex_color(r, ϕ)` accepts modulus and phase arrays as input.
