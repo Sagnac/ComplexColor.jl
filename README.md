@@ -1,8 +1,10 @@
 # ComplexColor.jl
 
-`complex_color(A)` converts an array of complex numbers into an image matrix of RGB values using a hue-lightness color mapping for the phase and modulus.
+`complex_color(s)` converts an array of complex numbers into an image matrix of RGB values using a hue-lightness color mapping for the phase and modulus.
 
-`complex_plot(x, y, s; title)` plots a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL color space.
+`complex_color(r, ϕ)` accepts modulus and phase arrays as input.
+
+`complex_plot(x, y, s)` plots a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL color space.
 
 ## Installation
 
