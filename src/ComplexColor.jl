@@ -2,9 +2,9 @@ module ComplexColor
 
 export complex_color, complex_plot, var"@L_str"
 
-using Images
+using Colors
 using GLMakie
-using .Makie: Axis, latexstring
+using .Makie: latexstring
 
 const ComplexArray = AbstractArray{<:Complex{<:Real}}
 
@@ -68,7 +68,7 @@ end
 
 function clamp01nan1!(img::AbstractArray{<:Colorant})
     for (i, v) ∈ pairs(img)
-        img[i] = mapc(v -> isnan(v) ? oneunit(v) : clamp01(v), v)
+        img[i] = mapc(v -> isnan(v) ? oneunit(v) : clamp(v, zero(v), oneunit(v)), v)
     end
     img
 end
