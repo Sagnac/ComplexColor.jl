@@ -7,6 +7,9 @@ using GLMakie
 using .Makie: latexstring
 
 const ComplexArray = AbstractArray{<:Complex{<:Real}}
+const RealArray = AbstractArray{<:Real}
+
+polar(s::ComplexArray; squared = false) = squared ? abs2.(s) : abs.(s), angle.(s)
 
 """
     complex_color(s)
@@ -26,28 +29,34 @@ julia> complex_color(z)
  RGB{Float64}(1.0,0.0,1.0)  RGB{Float64}(1.0,0.5,0.0)
 ```
 """
-function complex_color(s::ComplexArray; discontinuous = false)
-    r2 = abs2.(s)
-    ϕ = angle.(s)
+function complex_color(s::ComplexArray; septaphase = false)
+    r2, ϕ = polar(s; squared = true)
+    complex_color_(r2, ϕ; septaphase)
+end
+
+function complex_color(r::RealArray, ϕ::RealArray; septaphase = false)
+    complex_color_(abs2.(r), ϕ; septaphase)
+end
+
+# internal function (note the trailing underscore)
+function complex_color_(r2::RealArray, ϕ::RealArray; septaphase = false)
     H = @. rad2deg(mod(ϕ + 2π/3, 2π))
     L = @. r2 / (r2 + 1)
     S = ones(eltype(H), size(H))
-    if discontinuous
-        map!(hue -> 60 * fld(hue, 60), H, H)
-        @. L *= 2^(log2(abs(s) + 1) % 1 - 1)
-    end
+    septaphase && map!(hue -> 60 * fld(hue, 60), H, H)
     clamp01nan1!(map(RGB, HSL.(H, S, L)))
 end
 
 """
-    complex_plot(x, y, s; [title])
+    complex_plot(x, y, s; [title], [contours = true], [septaphase = false])
 
 Plot a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL color space.
+`septaphase = true` will plot the phase using only 6 colors (green, cyan, blue, magenta, red, yellow).
 """
 function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
                       title::AbstractString = L"s",
-                      discontinuous::Bool = false)
-    color_matrix = complex_color(s; discontinuous)
+                      contours::Bool = true,
+                      septaphase::Bool = false)
     xlen, ylen = size(s)
     nticks = 5
     xticklabels = latexstring.(range(x[begin], x[end], nticks))
@@ -60,7 +69,16 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
                 xlabel = L"Re(z)", xlabelsize = 16,
                 ylabel = L"Im(z)", ylabelsize = 16,
                 xticks, yticks)
-    plot = image!(axis, color_matrix)
+    if contours
+        r, ϕ = polar(s)
+        color_matrix = complex_color(r, ϕ; septaphase)
+        image!(axis, color_matrix)
+        contour!(axis, r; levels = [2.0^n for n = -3:8], colormap = Reverse(:acton))
+        contour!(axis, ϕ; levels = -π:π/2:π, colormap = hsl)
+    else
+        color_matrix = complex_color(s; septaphase)
+        image!(axis, color_matrix)
+    end
     Colorbar(fig[1,2]; colormap = hsl, limits = (-π, π), ticks = arg_ticks,
              label = "Arg(s)")
     fig
