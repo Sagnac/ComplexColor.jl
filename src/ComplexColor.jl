@@ -28,12 +28,16 @@ julia> complex_color(z)
  RGB{Float64}(1.0,0.0,1.0)  RGB{Float64}(1.0,0.5,0.0)
 ```
 """
-function complex_color(A::ComplexArray)
+function complex_color(A::ComplexArray; discontinuous = false)
     r2 = abs2.(A)
     ϕ = angle.(A)
     H = @. rad2deg(mod(ϕ + 2π/3, 2π))
     L = @. r2 / (r2 + 1)
     S = ones(eltype(H), size(H))
+    if discontinuous
+        map!(hue -> 60 * fld(hue, 60), H, H)
+        @. L *= 2^(log2(abs(A) + 1) % 1 - 1)
+    end
     clamp01nan1!(map(RGB, HSL.(H, S, L)))
 end
 
@@ -42,8 +46,9 @@ end
 
 Plot a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL color space.
 """
-function complex_plot(x::Lims, y::Lims, s::ComplexArray; title::Str = L"s")
-    color_matrix = complex_color(s)
+function complex_plot(x::Lims, y::Lims, s::ComplexArray; title::Str = L"s",
+                      discontinuous::Bool = false)
+    color_matrix = complex_color(s; discontinuous)
     xlen, ylen = size(s)
     nticks = 5
     xticklabels = latexstring.(range(x[begin], x[end], nticks))
