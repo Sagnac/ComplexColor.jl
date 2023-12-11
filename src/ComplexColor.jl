@@ -6,9 +6,7 @@ using Images
 using GLMakie
 using .Makie: Axis, latexstring
 
-const Lims = Union{AbstractRange, Tuple, AbstractVector}
 const ComplexArray = AbstractArray{<:Complex{<:Real}}
-const Str = Union{AbstractString, Makie.LaTeXString}
 
 """
     complex_color(s)
@@ -46,7 +44,8 @@ end
 
 Plot a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL color space.
 """
-function complex_plot(x::Lims, y::Lims, s::ComplexArray; title::Str = L"s",
+function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
+                      title::AbstractString = L"s",
                       discontinuous::Bool = false)
     color_matrix = complex_color(s; discontinuous)
     xlen, ylen = size(s)
