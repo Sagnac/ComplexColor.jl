@@ -6,6 +6,7 @@ using Colors
 using GLMakie
 using .Makie: latexstring
 
+const Lims = Union{Tuple, AbstractVector}
 const ComplexArray = AbstractArray{<:Complex{<:Real}}
 const RealArray = AbstractArray{<:Real}
 
@@ -53,7 +54,7 @@ end
 Plot a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL color space.
 `septaphase = true` will plot the phase using only 6 colors (green, cyan, blue, magenta, red, yellow).
 """
-function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
+function complex_plot(x::Lims, y::Lims, s::ComplexArray;
                       title::AbstractString = L"s",
                       contours::Bool = true,
                       septaphase::Bool = false)
@@ -82,6 +83,12 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
     Colorbar(fig[1,2]; colormap = hsl, limits = (-π, π), ticks = arg_ticks,
              label = "Arg(s)")
     fig
+end
+
+function complex_plot(z::ComplexArray, s::ComplexArray; kw...)
+    x = z |> real |> extrema
+    y = z |> imag |> extrema
+    complex_plot(x, y, s; kw...)
 end
 
 function clamp01nan1!(img::AbstractArray{<:Colorant})
