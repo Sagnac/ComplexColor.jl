@@ -11,7 +11,7 @@ const ComplexArray = AbstractArray{<:Complex{<:Real}}
 const Str = Union{AbstractString, Makie.LaTeXString}
 
 """
-    complex_color(A)
+    complex_color(s)
 
 Convert an array of complex numbers into an image matrix of RGB values using a hue-lightness color mapping for the phase and modulus.
 
@@ -28,15 +28,15 @@ julia> complex_color(z)
  RGB{Float64}(1.0,0.0,1.0)  RGB{Float64}(1.0,0.5,0.0)
 ```
 """
-function complex_color(A::ComplexArray; discontinuous = false)
-    r2 = abs2.(A)
-    ϕ = angle.(A)
+function complex_color(s::ComplexArray; discontinuous = false)
+    r2 = abs2.(s)
+    ϕ = angle.(s)
     H = @. rad2deg(mod(ϕ + 2π/3, 2π))
     L = @. r2 / (r2 + 1)
     S = ones(eltype(H), size(H))
     if discontinuous
         map!(hue -> 60 * fld(hue, 60), H, H)
-        @. L *= 2^(log2(abs(A) + 1) % 1 - 1)
+        @. L *= 2^(log2(abs(s) + 1) % 1 - 1)
     end
     clamp01nan1!(map(RGB, HSL.(H, S, L)))
 end
