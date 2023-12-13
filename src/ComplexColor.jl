@@ -6,11 +6,14 @@ using Colors
 using GLMakie
 using .Makie: latexstring
 
-const Lims = Union{Tuple, AbstractVector}
 const ComplexArray = AbstractArray{<:Complex{<:Real}}
 const RealArray = AbstractArray{<:Real}
 
-polar(s::ComplexArray; squared = false) = squared ? abs2.(s) : abs.(s), angle.(s)
+struct Septaphase end
+
+polar2(s::ComplexArray) = abs2.(s), angle.(s)
+
+polar3(s::ComplexArray) = abs.(s), abs2.(s), angle.(s)
 
 """
     complex_color(s)
@@ -30,22 +33,28 @@ julia> complex_color(z)
  RGB{Float64}(1.0,0.0,1.0)  RGB{Float64}(1.0,0.5,0.0)
 ```
 """
-function complex_color(s::ComplexArray; septaphase = false)
-    r2, ϕ = polar(s; squared = true)
-    complex_color_(r2, ϕ; septaphase)
+complex_color(s::ComplexArray) = HSL_to_RGB(polar2HSL(polar2(s)...))
+
+complex_color(r::RealArray, ϕ::RealArray) = HSL_to_RGB(polar2HSL(abs2.(r), ϕ))
+
+function complex_color(r2::RealArray, ϕ::RealArray, ::Septaphase)
+    H, S, L = polar2HSL(r2, ϕ)
+    HSL_to_RGB(H, S, L), septaphases(H, S, L)...
 end
 
-function complex_color(r::RealArray, ϕ::RealArray; septaphase = false)
-    complex_color_(abs2.(r), ϕ; septaphase)
-end
-
-# internal function (note the trailing underscore)
-function complex_color_(r2::RealArray, ϕ::RealArray; septaphase = false)
+function polar2HSL(r2::RealArray, ϕ::RealArray)
     H = @. rad2deg(mod(ϕ + 2π/3, 2π))
     L = @. r2 / (r2 + 1)
     S = ones(eltype(H), size(H))
-    septaphase && map!(hue -> 60 * fld(hue, 60), H, H)
-    clamp01nan1!(map(RGB, HSL.(H, S, L)))
+    return H, S, L
+end
+
+HSL_to_RGB(H, S, L) = map(RGB, HSL.(H, S, L)) |> clamp01nan1!
+
+function septaphases(H, S, L)
+        rounded = HSL_to_RGB(map(hue -> 60 * div(hue, 60, RoundNearest), H), S, L)
+    thresholded = HSL_to_RGB(map(hue -> 60 * fld(hue, 60), H), S, L)
+    return rounded, thresholded
 end
 
 """
@@ -54,11 +63,13 @@ end
 Plot a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL color space.
 `septaphase = true` will plot the phase using only 6 colors (green, cyan, blue, magenta, red, yellow).
 """
-function complex_plot(x::Lims, y::Lims, s::ComplexArray;
+function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
                       title::AbstractString = L"s",
                       contours::Bool = true,
                       septaphase::Bool = false)
-    xlen, ylen = size(s)
+    xlen = length(x)
+    ylen = length(y)
+    (xlen, ylen) == size(s) || error("Length mismatch.") 
     nticks = 5
     xticklabels = latexstring.(range(x[begin], x[end], nticks))
     yticklabels = latexstring.(range(y[begin], y[end], nticks))
@@ -70,19 +81,22 @@ function complex_plot(x::Lims, y::Lims, s::ComplexArray;
                 xlabel = L"Re(z)", xlabelsize = 16,
                 ylabel = L"Im(z)", ylabelsize = 16,
                 xticks, yticks)
-    if contours
-        r, ϕ = polar(s)
-        color_matrix = complex_color(r, ϕ; septaphase)
-        image!(axis, color_matrix)
-        contour!(axis, r; levels = [2.0^n for n = -3:8], colormap = Reverse(:acton))
-        contour!(axis, ϕ; levels = -π:π/2:π, colormap = hsl)
-    else
-        color_matrix = complex_color(s; septaphase)
-        image!(axis, color_matrix)
-    end
+    r, r2, ϕ = polar3(s)
+    grad_phase, thresh_phase, round_phase = complex_color(r2, ϕ, Septaphase())
+    img = image!(axis, grad_phase)
+    contour!(axis, r; levels = [2.0^n for n = -3:8], colormap = Reverse(:acton))
+    contour!(axis, ϕ; levels = -π:π/2:π, colormap = hsl)
     Colorbar(fig[1,2]; colormap = hsl, limits = (-π, π), ticks = arg_ticks,
              label = "Arg(s)")
     fig
+end
+
+function complex_plot(xlims::T, ylims::T, s::ComplexArray;
+                      kw...) where {S <: Real, T <: Tuple{S, S}}
+    xlen, ylen = size(s)
+    x = range(xlims..., xlen)
+    y = range(ylims..., ylen)
+    complex_plot(x, y, s; kw...)
 end
 
 function complex_plot(z::ComplexArray, s::ComplexArray; kw...)
