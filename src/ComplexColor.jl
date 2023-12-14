@@ -12,10 +12,6 @@ const RealArray = AbstractArray{<:Real}
 
 struct Septaphase end
 
-polar2(s::ComplexArray) = abs2.(s), angle.(s)
-
-polar3(s::ComplexArray) = abs.(s), abs2.(s), angle.(s)
-
 """
     complex_color(s)
 
@@ -34,17 +30,16 @@ julia> complex_color(z)
  RGB{Float64}(1.0,0.0,1.0)  RGB{Float64}(1.0,0.5,0.0)
 ```
 """
-complex_color(s::ComplexArray) = gradphase(polar2(s)...)
+complex_color(s::ComplexArray) = HSL_to_RGB(complex_to_HSL(s)...)
 
-complex_color(r::RealArray, ϕ::RealArray) = gradphase(abs2.(r), ϕ)
-
-function complex_color(r2::RealArray, ϕ::RealArray, ::Septaphase)
-    H, S, L = polar2HSL(r2, ϕ)
-    HSL_to_RGB(H, S, L), septaphases(H, S, L)...
+function complex_color(s::ComplexArray, ::Septaphase)
+    gradphase, S, L = complex_to_HSL(s)
+    [HSL_to_RGB(H, S, L) for H ∈ (gradphase, septaphase(gradphase)...)]
 end
 
-function polar2HSL(r2::RealArray, ϕ::RealArray)
-    H = @. rad2deg(mod(ϕ + 2π/3, 2π))
+function complex_to_HSL(s::ComplexArray)
+    r2 = abs2.(s)
+    H = @. mod(rad2deg(angle(s)) + 120, 360)
     L = @. r2 / (r2 + 1)
     S = ones(eltype(H), size(H))
     return H, S, L
@@ -52,26 +47,24 @@ end
 
 HSL_to_RGB(H, S, L) = map(RGB, HSL.(H, S, L)) |> clamp01nan1!
 
-gradphase(r2::RealArray, ϕ::RealArray) = HSL_to_RGB(polar2HSL(r2, ϕ))
-
-function septaphases(H, S, L)
-        rounded = HSL_to_RGB(map(hue -> 60 * div(hue, 60, RoundNearest), H), S, L)
-    thresholded = HSL_to_RGB(map(hue -> 60 * fld(hue, 60), H), S, L)
+function septaphase(H)
+        rounded = map(hue -> 60 * div(hue, 60, RoundNearest), H)
+    thresholded = map(hue -> 60 * fld(hue, 60), H)
     return rounded, thresholded
 end
 
 function draw_modulus_contours(axis, r)
-    levels = [2.0^n for n = -3:8]
+    levels = map(n -> ldexp(1.0, n), -3:8)
     colormap = Reverse(:acton)
     contour!(axis, r; levels, colormap, inspectable = false)
 end
 
 function draw_phase_contours(axis, ϕ)
-    contour!(axis, ϕ; levels = -π:π/2:π, colormap = hsl, inspectable = false)
+    contour!(axis, ϕ; levels = -180:90:180, colormap = hsl, inspectable = false)
 end
 
 """
-    complex_plot(x, y, s; [title], [contours = true], [septaphase = false])
+    complex_plot(x, y, s; [title])
 
 Plot a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL color space.
 
@@ -93,8 +86,8 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
                 xlabel = L"Re(z)", xlabelsize = 16,
                 ylabel = L"Im(z)", ylabelsize = 16,
                 xticks, yticks, aspect = DataAspect())
-    r, r2, ϕ = polar3(s)
-    ϕ2 = rad2deg.(ϕ)
+    r = abs.(s)
+    ϕ = @. rad2deg(angle(s))
     function inspector(_, inds, _)
         i, j = round.(Int, inds)
         str = @sprintf(
@@ -102,11 +95,11 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
             x: %.2f, y: %.2f
             r: %.2f, ϕ: %.2f\u00b0
             """,
-            x[i], y[j], r[i,j], ϕ2[i,j]
+            x[i], y[j], r[i,j], ϕ[i,j]
         )
         replace(str, '-' => '\u2212')
     end
-    color_matrices = complex_color(r2, ϕ, Septaphase())
+    color_matrices = complex_color(s, Septaphase())
     img = image!(axis, color_matrices[1]; inspector_label = inspector)
     local phase_contours
     modulus_contours = draw_modulus_contours(axis, r)
