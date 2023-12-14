@@ -2,6 +2,7 @@ module ComplexColor
 
 export complex_color, complex_plot, var"@L_str"
 
+using Printf
 using Colors
 using GLMakie
 using .Makie: latexstring
@@ -33,9 +34,9 @@ julia> complex_color(z)
  RGB{Float64}(1.0,0.0,1.0)  RGB{Float64}(1.0,0.5,0.0)
 ```
 """
-complex_color(s::ComplexArray) = HSL_to_RGB(polar2HSL(polar2(s)...))
+complex_color(s::ComplexArray) = gradphase(polar2(s)...)
 
-complex_color(r::RealArray, ϕ::RealArray) = HSL_to_RGB(polar2HSL(abs2.(r), ϕ))
+complex_color(r::RealArray, ϕ::RealArray) = gradphase(abs2.(r), ϕ)
 
 function complex_color(r2::RealArray, ϕ::RealArray, ::Septaphase)
     H, S, L = polar2HSL(r2, ϕ)
@@ -51,22 +52,33 @@ end
 
 HSL_to_RGB(H, S, L) = map(RGB, HSL.(H, S, L)) |> clamp01nan1!
 
+gradphase(r2::RealArray, ϕ::RealArray) = HSL_to_RGB(polar2HSL(r2, ϕ))
+
 function septaphases(H, S, L)
         rounded = HSL_to_RGB(map(hue -> 60 * div(hue, 60, RoundNearest), H), S, L)
     thresholded = HSL_to_RGB(map(hue -> 60 * fld(hue, 60), H), S, L)
     return rounded, thresholded
 end
 
+function draw_modulus_contours(axis, r)
+    levels = [2.0^n for n = -3:8]
+    colormap = Reverse(:acton)
+    contour!(axis, r; levels, colormap, inspectable = false)
+end
+
+function draw_phase_contours(axis, ϕ)
+    contour!(axis, ϕ; levels = -π:π/2:π, colormap = hsl, inspectable = false)
+end
+
 """
     complex_plot(x, y, s; [title], [contours = true], [septaphase = false])
 
 Plot a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL color space.
-`septaphase = true` will plot the phase using only 6 colors (green, cyan, blue, magenta, red, yellow).
+
+The three-valued `septaphase` slider option on the plot will partition the phase using only 6 colors (green, cyan, blue, magenta, red, yellow) either by thresholding or by rounding, depending on the setting; the default off position plots a gradient phase.
 """
 function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
-                      title::AbstractString = L"s",
-                      contours::Bool = true,
-                      septaphase::Bool = false)
+                      title::AbstractString = L"s")
     xlen = length(x)
     ylen = length(y)
     (xlen, ylen) == size(s) || error("Length mismatch.") 
@@ -76,18 +88,57 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
     xticks = (range(1, xlen, nticks), xticklabels)
     yticks = (range(1, ylen, nticks), yticklabels)
     arg_ticks = (-π:π:π, [L"-\pi", L"0", L"\pi"])
-    fig = Figure()
+    fig = Figure(size = (600, 535))
     axis = Axis(fig[1,1]; title, titlesize = 21,
                 xlabel = L"Re(z)", xlabelsize = 16,
                 ylabel = L"Im(z)", ylabelsize = 16,
-                xticks, yticks)
+                xticks, yticks, aspect = DataAspect())
     r, r2, ϕ = polar3(s)
-    grad_phase, thresh_phase, round_phase = complex_color(r2, ϕ, Septaphase())
-    img = image!(axis, grad_phase)
-    contour!(axis, r; levels = [2.0^n for n = -3:8], colormap = Reverse(:acton))
-    contour!(axis, ϕ; levels = -π:π/2:π, colormap = hsl)
+    ϕ2 = rad2deg.(ϕ)
+    function inspector(_, inds, _)
+        i, j = round.(Int, inds)
+        str = @sprintf(
+            """
+            x: %.2f, y: %.2f
+            r: %.2f, ϕ: %.2f\u00b0
+            """,
+            x[i], y[j], r[i,j], ϕ2[i,j]
+        )
+        replace(str, '-' => '\u2212')
+    end
+    color_matrices = complex_color(r2, ϕ, Septaphase())
+    img = image!(axis, color_matrices[1]; inspector_label = inspector)
+    local phase_contours
+    modulus_contours = draw_modulus_contours(axis, r)
     Colorbar(fig[1,2]; colormap = hsl, limits = (-π, π), ticks = arg_ticks,
              label = "Arg(s)")
+    grid = GridLayout(fig[2,:])
+    modulus_toggle = Toggle(fig; active = true)
+    phase_toggle = Toggle(fig; active = false)
+    septaphase_slider = Slider(fig; range = 1:3, width = phase_toggle.width[] * 1.5)
+    grid[1,1] = grid!([Label(fig, "septaphase") septaphase_slider])
+    grid[1,2] = grid!([Label(fig, "phase contours") phase_toggle])
+    grid[1,3] = grid!([Label(fig, "modulus contours") modulus_toggle])
+    on(septaphase_slider.value) do value
+        img[3][] = color_matrices[value]
+    end
+    on(phase_toggle.active) do active
+        if active
+            phase_contours = draw_phase_contours(axis, ϕ)
+        else    
+            delete!(axis, phase_contours)
+        end
+    end
+    on(modulus_toggle.active) do active
+        if active
+            modulus_contours = draw_modulus_contours(axis, r)
+        else    
+            delete!(axis, modulus_contours)
+        end
+    end
+    colsize!(fig.layout, 1, Aspect(1, 1.0))
+    resize_to_layout!(fig)
+    DataInspector(fig)
     fig
 end
 
