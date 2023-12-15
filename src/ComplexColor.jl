@@ -81,7 +81,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
     xticks = (range(1, xlen, nticks), xticklabels)
     yticks = (range(1, ylen, nticks), yticklabels)
     arg_ticks = (-π:π:π, [L"-\pi", L"0", L"\pi"])
-    fig = Figure(size = (600, 535))
+    fig = Figure(size = (600, 532))
     axis = Axis(fig[1,1]; title, titlesize = 21,
                 xlabel = L"Re(z)", xlabelsize = 16,
                 ylabel = L"Im(z)", ylabelsize = 16,
