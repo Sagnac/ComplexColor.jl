@@ -39,7 +39,7 @@ end
 
 function complex_to_HSL(s::ComplexArray)
     r2 = abs2.(s)
-    H = @. mod(rad2deg(angle(s)) + 120, 360)
+    H = @. rad2deg(mod2pi(angle(s) + 2π/3))
     L = @. r2 / (r2 + 1)
     S = ones(eltype(H), size(H))
     return H, S, L
