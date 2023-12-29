@@ -144,8 +144,8 @@ function complex_plot(xlims::T, ylims::T, s::ComplexArray;
 end
 
 function complex_plot(z::ComplexArray, s::ComplexArray; kw...)
-    x = z |> real |> extrema
-    y = z |> imag |> extrema
+    x = extrema(real, z)
+    y = extrema(imag, z)
     complex_plot(x, y, s; kw...)
 end
 
