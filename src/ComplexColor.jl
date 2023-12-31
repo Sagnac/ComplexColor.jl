@@ -54,7 +54,7 @@ function septaphase(H)
 end
 
 function draw_modulus_contours(axis, r)
-    levels = map(n -> ldexp(1.0, n), -3:8)
+    levels = exp2.(-3:8)
     colormap = Reverse(:acton)
     contour!(axis, r; levels, colormap, inspectable = false)
 end
