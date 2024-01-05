@@ -7,7 +7,7 @@ using Colors
 using GLMakie
 using .Makie: latexstring
 
-const ComplexArray = AbstractArray{<:Complex{<:Real}}
+const ComplexArray = AbstractArray{<:Complex}
 const RealArray = AbstractArray{<:Real}
 
 struct Septaphase end
