@@ -1,6 +1,6 @@
 module ComplexColor
 
-export complex_color, complex_plot, var"@L_str"
+export complex_color, complex_plot, var"@L_str", RGB, HSL, Oklch
 
 using Printf
 using Colors
@@ -10,10 +10,14 @@ using .Makie: latexstring
 const ComplexArray = AbstractArray{<:Complex}
 const RealArray = AbstractArray{<:Real}
 
+const Spaces = Union{Type{Oklch}, Type{HSL}}
+
+const chroma = 0.35
+
 struct Septaphase end
 
 """
-    complex_color(s)
+    complex_color(s [, color = Oklch])
 
 Convert an array of complex numbers into an image matrix of RGB values using a hue-lightness color mapping for the phase and modulus.
 
@@ -25,27 +29,47 @@ julia> z = [0 im; -1 -im]
  -1+0im  0-1im
 
 julia> complex_color(z)
-2×2 Array{RGB{Float64},2} with eltype ColorTypes.RGB{Float64}:
+2×2 Array{RGB{Float64},2} with eltype RGB{Float64}:
  RGB{Float64}(0.0,0.0,0.0)  RGB{Float64}(0.0,0.5,1.0)
  RGB{Float64}(1.0,0.0,1.0)  RGB{Float64}(1.0,0.5,0.0)
 ```
 """
-complex_color(s::ComplexArray) = HSL_to_RGB(complex_to_HSL(s)...)
-
-function complex_color(s::ComplexArray, ::Septaphase)
-    gradphase, S, L = complex_to_HSL(s)
-    [HSL_to_RGB(H, S, L) for H ∈ (gradphase, septaphase(gradphase)...)]
+function complex_color(s::ComplexArray, color::Spaces = Oklch)
+    to_RGB(color, to_color(s, color)...)
 end
 
-function complex_to_HSL(s::ComplexArray)
+function complex_color(s::ComplexArray, ::Septaphase, color::Type{Oklch})
+    L, C, gradphase = to_color(s, color)
+    [to_RGB(color, L, C, H) for H ∈ (gradphase, septaphase(gradphase)...)]
+end
+
+function complex_color(s::ComplexArray, ::Septaphase, color::Type{HSL})
+    gradphase, S, L = to_color(s, color)
+    [to_RGB(color, H, S, L) for H ∈ (gradphase, septaphase(gradphase)...)]
+end
+
+function Λ(s)
     r2 = abs2.(s)
-    H = @. rad2deg(mod2pi(angle(s) + 2π/3))
-    L = @. r2 / (r2 + 1)
+    @. r2 / (r2 + one(r2))
+end
+
+Φ(s) = @. rad2deg(mod2pi(angle(s) + 2π/3))
+
+function to_color(s::ComplexArray, color::Type{Oklch})
+    L = Λ(s)
+    C = fill(chroma, size(H))
+    H = Φ(s) .- 30
+    return L, C, H
+end
+
+function to_color(s::ComplexArray, color::Type{HSL})
+    H = Φ(s)
     S = ones(eltype(H), size(H))
+    L = Λ(s)
     return H, S, L
 end
 
-HSL_to_RGB(H, S, L) = map(RGB, HSL.(H, S, L)) |> clamp01nan1!
+to_RGB(color, t...) = map(RGB, color.(t...)) |> clamp01nan1!
 
 function septaphase(H)
         rounded = map(hue -> 60 * div(hue, 60, RoundNearest), H)
@@ -59,19 +83,19 @@ function draw_modulus_contours(axis, r)
     contour!(axis, r; levels, colormap, inspectable = false)
 end
 
-function draw_phase_contours(axis, ϕ)
-    contour!(axis, ϕ; levels = -180:90:180, colormap = hsl, inspectable = false)
+function draw_phase_contours(axis, ϕ, colormap)
+    contour!(axis, ϕ; levels = -180:90:180, colormap, inspectable = false)
 end
 
 """
-    complex_plot(x, y, s; [title])
+    complex_plot(x, y, s [,color = Oklch]; [title])
 
-Plot a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL color space.
+Plot a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL or Oklch color spaces.
 
 The three-valued `septaphase` slider option on the plot will partition the phase using only 6 colors (green, cyan, blue, magenta, red, yellow) either by thresholding or by rounding, depending on the setting; the default off position plots a gradient phase.
 """
-function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
-                      title::AbstractString = L"s")
+function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
+                      color::Spaces = Oklch; title::AbstractString = L"s")
     xlen = length(x)
     ylen = length(y)
     (xlen, ylen) == size(s) || error("Length mismatch.") 
@@ -99,11 +123,12 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
         )
         replace(str, '-' => '\u2212')
     end
-    color_matrices = complex_color(s, Septaphase())
+    color_matrices = complex_color(s, Septaphase(), color)
     img = image!(axis, color_matrices[1]; inspector_label = inspector)
     local phase_contours
     modulus_contours = draw_modulus_contours(axis, r)
-    Colorbar(fig[1,2]; colormap = hsl, limits = (-π, π), ticks = arg_ticks,
+    colormap = colormaps[color]
+    Colorbar(fig[1,2]; colormap, limits = (-π, π), ticks = arg_ticks,
              label = "Arg(s)")
     grid = GridLayout(fig[2,:])
     modulus_toggle = Toggle(fig; active = true)
@@ -117,7 +142,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
     end
     on(phase_toggle.active) do active
         if active
-            phase_contours = draw_phase_contours(axis, ϕ)
+            phase_contours = draw_phase_contours(axis, ϕ, colormap)
         else    
             delete!(axis, phase_contours)
         end
@@ -135,18 +160,18 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray;
     fig
 end
 
-function complex_plot(xlims::T, ylims::T, s::ComplexArray;
+function complex_plot(xlims::T, ylims::T, s::ComplexArray, color::Spaces = Oklch;
                       kw...) where {S <: Real, T <: Tuple{S, S}}
     xlen, ylen = size(s)
     x = range(xlims..., xlen)
     y = range(ylims..., ylen)
-    complex_plot(x, y, s; kw...)
+    complex_plot(x, y, s, color; kw...)
 end
 
-function complex_plot(z::ComplexArray, s::ComplexArray; kw...)
+function complex_plot(z::ComplexArray, s::ComplexArray, color::Spaces = Oklch; kw...)
     x = extrema(real, z)
     y = extrema(imag, z)
-    complex_plot(x, y, s; kw...)
+    complex_plot(x, y, s, color; kw...)
 end
 
 function clamp01nan1!(img::AbstractArray{<:Colorant})
@@ -156,7 +181,9 @@ function clamp01nan1!(img::AbstractArray{<:Colorant})
     img
 end
 
-"HSL colormap"
-const hsl = map(RGB, HSL(i, 1.0, 0.5) for i = range(-60, 300, 2^10))
+const colormaps = Dict(
+    HSL   => map(RGB, HSL(i, 1.0, 0.5) for i = range(-60, 300, 2^10)),
+    Oklch => map(RGB, Oklch(0.5, chroma, i) for i = range(-30, 330, 2^10))
+)
 
 end
