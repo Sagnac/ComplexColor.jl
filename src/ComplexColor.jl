@@ -53,18 +53,20 @@ function Λ(s)
     @. r2 / (r2 + one(r2))
 end
 
-Φ(s) = @. rad2deg(mod2pi(angle(s) + 2π/3))
+degrees(s) = rad2deg(angle(s))
+
+mod360(s, offset) = mod(degrees(s) + offset, 360)
 
 function to_color(s::ComplexArray, color::Type{Oklch})
     L = Λ(s)
     C = fill(chroma, size(H))
-    H = Φ(s) .- 30
+    H = mod360.(s, 90)
     return L, C, H
 end
 
 function to_color(s::ComplexArray, color::Type{HSL})
-    H = Φ(s)
-    S = ones(eltype(H), size(H))
+    H = mod360.(s, 120)
+    S = ones(size(H))
     L = Λ(s)
     return H, S, L
 end
@@ -111,7 +113,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
                 ylabel = L"Im(z)", ylabelsize = 16,
                 xticks, yticks, aspect = DataAspect())
     r = abs.(s)
-    ϕ = @. rad2deg(angle(s))
+    ϕ = degrees.(s)
     function inspector(_, inds, _)
         i, j = round.(Int, inds)
         str = @sprintf(
