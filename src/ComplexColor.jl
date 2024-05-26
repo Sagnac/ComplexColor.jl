@@ -14,10 +14,12 @@ const Spaces = Union{Type{Oklch}, Type{HSL}}
 
 const chroma = 0.35
 
+const default = HSL
+
 struct Septaphase end
 
 """
-    complex_color(s [, color = Oklch])
+    complex_color(s [, color = `$default`])
 
 Convert an array of complex numbers into an image matrix of RGB values using a hue-lightness color mapping for the phase and modulus.
 
@@ -34,7 +36,7 @@ julia> complex_color(z)
  RGB{Float64}(1.0,0.0,1.0)  RGB{Float64}(1.0,0.5,0.0)
 ```
 """
-function complex_color(s::ComplexArray, color::Spaces = Oklch)
+function complex_color(s::ComplexArray, color::Spaces = default)
     to_RGB(color, to_color(s, color)...)
 end
 
@@ -90,14 +92,14 @@ function draw_phase_contours(axis, ϕ, colormap)
 end
 
 """
-    complex_plot(x, y, s [,color = Oklch]; [title])
+    complex_plot(x, y, s [,color = `$default`]; [title])
 
-Plot a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL or Oklch color spaces.
+Plot a complex number array `s` within the `x` and `y` limits using domain coloring in the `HSL` or `Oklch` color spaces.
 
 The three-valued `septaphase` slider option on the plot will partition the phase using only 6 colors (green, cyan, blue, magenta, red, yellow) either by thresholding or by rounding, depending on the setting; the default off position plots a gradient phase.
 """
 function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
-                      color::Spaces = Oklch; title::AbstractString = L"s")
+                      color::Spaces = default; title::AbstractString = L"s")
     xlen = length(x)
     ylen = length(y)
     (xlen, ylen) == size(s) || error("Length mismatch.") 
@@ -162,7 +164,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     fig
 end
 
-function complex_plot(xlims::T, ylims::T, s::ComplexArray, color::Spaces = Oklch;
+function complex_plot(xlims::T, ylims::T, s::ComplexArray, color::Spaces = default;
                       kw...) where {S <: Real, T <: Tuple{S, S}}
     xlen, ylen = size(s)
     x = range(xlims..., xlen)
@@ -170,7 +172,8 @@ function complex_plot(xlims::T, ylims::T, s::ComplexArray, color::Spaces = Oklch
     complex_plot(x, y, s, color; kw...)
 end
 
-function complex_plot(z::ComplexArray, s::ComplexArray, color::Spaces = Oklch; kw...)
+function complex_plot(z::ComplexArray, s::ComplexArray,
+                      color::Spaces = default; kw...)
     x = extrema(real, z)
     y = extrema(imag, z)
     complex_plot(x, y, s, color; kw...)
@@ -185,7 +188,7 @@ end
 
 const colormaps = Dict(
     HSL   => map(RGB, HSL(i, 1.0, 0.5) for i = range(-60, 300, 2^10)),
-    Oklch => map(RGB, Oklch(0.5, chroma, i) for i = range(-30, 330, 2^10))
+    # Oklch => map(RGB, Oklch(0.5, chroma, i) for i = range(-30, 330, 2^10))
 )
 
 end
