@@ -1,11 +1,11 @@
 module ComplexColor
 
-export complex_color, complex_plot, var"@L_str", RGB, HSL, Oklch
+export complex_color, complex_plot, var"@L_str", (..), RGB, HSL, Oklch
 
 using Printf
 using Colors
 using GLMakie
-using .Makie: latexstring
+using .Makie: latexstring, IntervalSets.ClosedInterval
 
 const ComplexArray = AbstractArray{<:Complex}
 const RealArray = AbstractArray{<:Real}
@@ -177,6 +177,22 @@ function complex_plot(z::ComplexArray, s::ComplexArray,
     x = extrema(real, z)
     y = extrema(imag, z)
     complex_plot(x, y, s, color; kw...)
+end
+
+# generic methods where f is a complex function
+function complex_plot(x::AbstractVector, y::AbstractVector, f,
+                      color::Spaces = default; kw...)
+    z = complex.(x, y')
+    s = f.(z)
+    complex_plot(x, y, s, color; kw...)
+end
+
+function complex_plot(x::T, y::T, f, color::Spaces = default;
+                      kw...) where T <: ClosedInterval
+    len = 1000
+    x = range(x, len)
+    y = range(y, len)
+    complex_plot(x, y, f, color; kw...)
 end
 
 function clamp01nan1!(img::AbstractArray{<:Colorant})
