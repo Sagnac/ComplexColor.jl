@@ -17,7 +17,7 @@ const Spaces = Union{Type{Oklch}, Type{HSL}}
 
 const chroma = 0.35
 
-const default = HSL
+const default = Oklch
 
 struct Septaphase end
 
@@ -233,7 +233,7 @@ end
 
 const colormaps = Dict(
     HSL   => map(RGB, HSL(i, 1.0, 0.5) for i = range(-60, 300, 2^10)),
-    # Oklch => map(RGB, Oklch(0.5, chroma, i) for i = range(-30, 330, 2^10))
+    Oklch => map(RGB, Oklch(0.5, chroma, i) for i = range(-30, 330, 2^10))
 )
 
 end
