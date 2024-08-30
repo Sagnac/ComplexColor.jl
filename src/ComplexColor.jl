@@ -52,7 +52,8 @@ end
 
 function Λ(s)
     r2 = abs2.(s)
-    @. r2 / (r2 + one(r2))
+    _1 = one(eltype(r2))
+    @. r2 / (_1 + r2)
 end
 
 degrees(s) = rad2deg(angle(s))
