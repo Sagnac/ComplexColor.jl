@@ -159,6 +159,18 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
             delete!(axis, modulus_contours)
         end
     end
+    ar = true
+    function aspect_control()
+        axis.aspect = ar ? DataAspect() : nothing
+        colsize!(fig.layout, 1, ar ? Aspect(1, xlen / ylen) : Auto(true, 1.0))
+    end
+    onmouserightup(addmouseevents!(fig.scene)) do _
+        ispressed(fig, Keyboard.left_control) || return
+        ar = !ar
+        aspect_control()
+        resize_to_layout!(fig)
+    end
+    aspect_control()
     DataInspector(fig)
     fig
 end
