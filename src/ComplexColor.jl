@@ -114,7 +114,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     axis = Axis(fig[1,1]; title, titlesize = 21,
                 xlabel = L"Re(z)", xlabelsize = 16,
                 ylabel = L"Im(z)", ylabelsize = 16,
-                xticks, yticks, aspect = DataAspect())
+                xticks, yticks)
     r = abs.(s)
     ϕ = degrees.(s)
     function inspector(_, inds, _)
@@ -159,8 +159,6 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
             delete!(axis, modulus_contours)
         end
     end
-    colsize!(fig.layout, 1, Aspect(1, 1.0))
-    resize_to_layout!(fig)
     DataInspector(fig)
     fig
 end
