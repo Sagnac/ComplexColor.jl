@@ -196,6 +196,10 @@ function complex_plot(x::T, y::T, f, color::Spaces = default;
     complex_plot(x, y, f, color; kw...)
 end
 
+function complex_plot(z::ComplexArray, f, color::Spaces = default; kw...)
+    complex_plot(z, f.(z))
+end
+
 function clamp01nan1!(img::AbstractArray{<:Colorant})
     for (i, v) ∈ pairs(img)
         img[i] = mapc(v -> isnan(v) ? oneunit(v) : clamp(v, zero(v), oneunit(v)), v)
