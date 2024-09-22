@@ -77,8 +77,8 @@ end
 to_RGB(color, t...) = map(RGB, color.(t...)) |> clamp01nan1!
 
 function septaphase(H)
-        rounded = map(hue -> 60 * div(hue, 60, RoundNearest), H)
-    thresholded = map(hue -> 60 * fld(hue, 60), H)
+        rounded = map(hue -> 60 * round(hue / 60), H)
+    thresholded = map(hue -> 60 * floor(hue / 60), H)
     return rounded, thresholded
 end
 
