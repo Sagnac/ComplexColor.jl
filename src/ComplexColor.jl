@@ -111,8 +111,10 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     ylen = length(y)
     (xlen, ylen) == size(s) || error("Length mismatch.") 
     nticks = 5
-    xticklabels = latexstring.(range(x[begin], x[end], nticks))
-    yticklabels = latexstring.(range(y[begin], y[end], nticks))
+    xtickrange = range(x[begin], x[end], nticks)
+    ytickrange = range(y[begin], y[end], nticks)
+    xticklabels = map(i -> latexstring(@sprintf("%.2f", i)), xtickrange)
+    yticklabels = map(i -> latexstring(@sprintf("%.2f", i)), ytickrange)
     xticks = (range(1, xlen, nticks), xticklabels)
     yticks = (range(1, ylen, nticks), yticklabels)
     arg_ticks = (-π:π:π, [L"-\pi", L"0", L"\pi"])
