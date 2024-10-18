@@ -9,9 +9,6 @@ using Colors
 using GLMakie
 using .Makie: latexstring
 using IntervalSets
-using IntervalSets: width
-
-include("intervals.jl")
 
 const ComplexArray = AbstractArray{<:Complex}
 const RealArray = AbstractArray{<:Real}
@@ -20,7 +17,7 @@ const Spaces = Union{Type{Oklch}, Type{HSL}}
 
 const chroma = 0.35
 
-const default = HSL
+const default = Oklch
 
 struct Septaphase end
 
@@ -48,7 +45,7 @@ end
 
 function complex_color(s::ComplexArray, ::Septaphase, color::Type{Oklch})
     L, C, gradphase = to_color(s, color)
-    [to_RGB(color, L, C, H) for H ∈ (gradphase, septaphase(gradphase)...)]
+    [to_RGB(color, L, C, H) for H ∈ (gradphase, septaphase(gradphase, color)...)]
 end
 
 function complex_color(s::ComplexArray, ::Septaphase, color::Type{HSL})
@@ -62,19 +59,21 @@ function Λ(s)
     @. r2 / (_1_ + r2)
 end
 
-degrees(s) = rad2deg(angle(s))
+degrees(s) = @. rad2deg(angle(s))
 
-mod360(s, offset) = mod(degrees(s) + offset, 360)
+mod360(s::RealArray, offset) = @. mod(s + offset, 360)
+
+mod360(s::ComplexArray, offset) = mod360(degrees(s), offset)
 
 function to_color(s::ComplexArray, color::Type{Oklch})
     L = Λ(s)
-    C = fill(chroma, size(H))
-    H = mod360.(s, 90)
+    C = fill(chroma, size(L))
+    H = mod360(s, 150)
     return L, C, H
 end
 
 function to_color(s::ComplexArray, color::Type{HSL})
-    H = mod360.(s, 120)
+    H = mod360(s, 120)
     S = ones(size(H))
     L = Λ(s)
     return H, S, L
@@ -83,10 +82,13 @@ end
 to_RGB(color, t...) = map(RGB, color.(t...)) |> clamp01nan1!
 
 function septaphase(H)
-        rounded = map(hue -> 60 * round(hue / 60), H)
-    thresholded = map(hue -> 60 * floor(hue / 60), H)
+    φ = 60
+        rounded = map(hue -> φ * round(hue / φ), H)
+    thresholded = map(hue -> φ * floor(hue / φ), H)
     return rounded, thresholded
 end
+
+septaphase(H, color::Type{Oklch}) = septaphase(mod360(H, -30))
 
 function draw_modulus_contours(axis, r)
     levels = exp2.(-3:15)
@@ -124,7 +126,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
                 ylabel = L"Im(z)", ylabelsize = 16,
                 xticks, yticks)
     r = abs.(s)
-    ϕ = degrees.(s)
+    ϕ = degrees(s)
     function inspector(_, inds, _)
         i, j = round.(Int, inds)
         str = @sprintf(
@@ -236,7 +238,7 @@ end
 
 const colormaps = Dict(
     HSL   => map(RGB, HSL(i, 1.0, 0.5) for i = range(-60, 300, 2^10)),
-    # Oklch => map(RGB, Oklch(0.5, chroma, i) for i = range(-30, 330, 2^10))
+    Oklch => map(RGB, Oklch(0.5, chroma, i) for i = range(-30, 330, 2^10))
 )
 
 end

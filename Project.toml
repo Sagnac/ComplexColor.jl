@@ -11,3 +11,7 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
 GLMakie = "0.9.6 - 0.10"
+
+[sources]
+Colors = {url = "https://github.com/Sagnac/Colors.jl", rev = "master"}
+IntervalSets = {url = "https://github.com/Sagnac/IntervalSets.jl", rev = "range"}
