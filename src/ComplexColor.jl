@@ -9,9 +9,6 @@ using Colors
 using GLMakie
 using .Makie: latexstring
 using IntervalSets
-using IntervalSets: width
-
-include("intervals.jl")
 
 const ComplexArray = AbstractArray{<:Complex}
 const RealArray = AbstractArray{<:Real}
