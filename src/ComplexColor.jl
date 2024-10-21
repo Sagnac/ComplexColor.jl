@@ -40,18 +40,16 @@ julia> complex_color(z)
 ```
 """
 function complex_color(s::ComplexArray, color::Spaces = default)
-    to_RGB(color, to_color(s, color)...)
+    to_RGB(to_color(s, color), color)
 end
 
-function complex_color(s::ComplexArray, ::Septaphase, color::Type{Oklch})
-    L, C, gradphase = to_color(s, color)
-    [to_RGB(color, L, C, H) for H ∈ (gradphase, septaphase(gradphase, color)...)]
+function complex_color(s::ComplexArray, ::Septaphase, color::Spaces)
+    t = to_color(s, color)
+    t1, t2, t3 = revif(t, color)
+    [to_RGB(revif((t1, t2, H), color), color) for H ∈ (t3, septaphase(t3, color)...)]
 end
 
-function complex_color(s::ComplexArray, ::Septaphase, color::Type{HSL})
-    gradphase, S, L = to_color(s, color)
-    [to_RGB(color, H, S, L) for H ∈ (gradphase, septaphase(gradphase)...)]
-end
+revif(t::NTuple{3, RealArray}, color::Spaces) = color == HSL ? reverse(t) : t
 
 function Λ(s)
     r2 = abs2.(s)
@@ -79,16 +77,17 @@ function to_color(s::ComplexArray, color::Type{HSL})
     return H, S, L
 end
 
-to_RGB(color, t...) = map(RGB, color.(t...)) |> clamp01nan1!
+to_RGB(t, color) = map(RGB, color.(t...)) |> clamp01nan1!
 
-function septaphase(H)
+function septaphase(H, color::Spaces)
+    if color == Oklch
+        H = mod360(H, -30)
+    end
     φ = 60
         rounded = map(hue -> φ * round(hue / φ), H)
     thresholded = map(hue -> φ * floor(hue / φ), H)
     return rounded, thresholded
 end
-
-septaphase(H, color::Type{Oklch}) = septaphase(mod360(H, -30))
 
 function draw_modulus_contours(axis, r)
     levels = exp2.(-3:15)
