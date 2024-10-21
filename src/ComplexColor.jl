@@ -114,8 +114,8 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     nticks = 5
     xtickrange = range(x[begin], x[end], nticks)
     ytickrange = range(y[begin], y[end], nticks)
-    xticklabels = map(i -> latexstring(@sprintf("%.2f", i)), xtickrange)
-    yticklabels = map(i -> latexstring(@sprintf("%.2f", i)), ytickrange)
+    xticklabels = map(i -> latexstring(@sprintf("%.4G", i)), xtickrange)
+    yticklabels = map(i -> latexstring(@sprintf("%.4G", i)), ytickrange)
     xticks = (range(1, xlen, nticks), xticklabels)
     yticks = (range(1, ylen, nticks), yticklabels)
     arg_ticks = (-π:π:π, [L"-\pi", L"0", L"\pi"])
@@ -130,8 +130,8 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
         i, j = round.(Int, inds)
         str = @sprintf(
             """
-            x: %.2f, y: %.2f
-            r: %.2f, ϕ: %.2f\u00b0
+            x: %.4G, y: %.4G
+            r: %.4G, ϕ: %.2f\u00b0
             """,
             x[i], y[j], r[i,j], ϕ[i,j]
         )
