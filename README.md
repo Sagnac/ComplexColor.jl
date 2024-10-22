@@ -10,10 +10,7 @@
 
 ## Installation
 
-```julia
-using Pkg
-Pkg.add(url="https://github.com/Sagnac/ComplexColor.jl")
-```
+This package is currently not registered and depends upon a couple of unregistered forked versions of other packages at the moment so the best way to use it would be by cloning, activating, then instantiating using Julia 1.11 or greater.
 
 ## Plotting examples
 
