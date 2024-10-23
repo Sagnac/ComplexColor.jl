@@ -19,6 +19,9 @@ const chroma = 0.35
 
 const default = Oklch
 
+# base interval range length
+const n = 1000
+
 struct Septaphase end
 
 """
@@ -172,12 +175,12 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     function aspect_control()
         axis.aspect = ar ? DataAspect() : nothing
         colsize!(fig.layout, 1, ar ? Aspect(1, xlen / ylen) : Auto(true, 1.0))
+        resize_to_layout!(fig)
     end
     onmouserightup(addmouseevents!(fig.scene)) do _
         ispressed(fig, Keyboard.left_control) || return
         ar = !ar
         aspect_control()
-        resize_to_layout!(fig)
     end
     aspect_control()
     DataInspector(fig)
@@ -207,21 +210,25 @@ function complex_plot(x::AbstractVector, y::AbstractVector, f,
     complex_plot(x, y, s, color; kw...)
 end
 
+Δ(x::AbstractVector) = x[end] - x[begin]
+Δ(x::Interval) = IntervalSets.width(x)
+
+adjust_len(x, y, len) = round(Int, len * Δ(x) / Δ(y))
+
 function complex_plot(x::Interval, y::Interval, f, color::Spaces = default; kw...)
-    len = 1000
-    x = range(x, len)
-    y = range(y, len)
+    x = range(x, adjust_len(x, y, n))
+    y = range(y, n)
     complex_plot(x, y, f, color; kw...)
 end
 
 function complex_plot(x::AbstractVector, y::Interval, f, color::Spaces = default;
                       kw...)
-    complex_plot(x, range(y, length(x)), f, color; kw...)
+    complex_plot(x, range(y, adjust_len(y, x, length(x))), f, color; kw...)
 end
 
 function complex_plot(x::Interval, y::AbstractVector, f, color::Spaces = default;
                       kw...)
-    complex_plot(range(x, length(y)), y, f, color; kw...)
+    complex_plot(range(x, adjust_len(x, y, length(y))), y, f, color; kw...)
 end
 
 function complex_plot(z::ComplexArray, f, color::Spaces = default; kw...)
