@@ -22,14 +22,11 @@ z = complex.(x, y')
 s = map(z -> 1/z, z)
 # transform the complex array into an image
 fig = complex_plot(x, y, s; title = L"s = z^{-1}")
+```
 
-# convenient methods if you don't want to explicitly construct an array
-
-# for a complex function f
-f(z) = inv(z)
-complex_plot(x, y, f)
-
-# with intervals
+```julia
+# for a complex function f with intervals
 x = y = -2..2
+f(z) = inv(z)
 complex_plot(x, y, f)
 ```
