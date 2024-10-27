@@ -22,11 +22,7 @@ const n = 1000
 
 struct Septaphase end
 
-const colors_compat = pkgversion(Colors) <= v"0.12.11"
-
-const default = colors_compat ? HSL : Oklch
-
-__init__() = colors_compat && @warn "Oklch color is not available in this version."
+const default = Oklch
 
 """
     complex_color(s [, color = `$default`])
@@ -248,9 +244,6 @@ end
 
 const colormaps = Dict{Spaces, Vector{RGB{Float64}}}(
     HSL   => map(RGB, HSL(i, 1.0, 0.5) for i = range(-60, 300, 2^10)),
-)
-
-colors_compat || push!(colormaps,
     Oklch => map(RGB, Oklch(0.5, chroma, i) for i = range(-30, 330, 2^10))
 )
 
