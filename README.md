@@ -15,6 +15,11 @@ using Pkg
 Pkg.add(url="https://github.com/Sagnac/ComplexColor.jl")
 ```
 
+Support for the Oklch color space requires the following fork:
+```julia
+Pkg.add(url="https://github.com/Sagnac/Colors.jl")
+```
+
 ## Plotting examples
 
 ```julia
