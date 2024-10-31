@@ -24,16 +24,15 @@ Pkg.add(url="https://github.com/Sagnac/Colors.jl")
 
 ```julia
 using ComplexColor
-# construct the complex array
+# for a complex array
 x = y = -2:0.01:2
 z = complex.(x, y')
 s = map(z -> 1/z, z)
-# transform the complex array into an image
 fig = complex_plot(x, y, s; title = L"s = z^{-1}")
 ```
 
 ```julia
-# for a complex function f with intervals
+# for a complex function over intervals
 x = y = -2..2
 f(z) = inv(z)
 complex_plot(x, y, f)
