@@ -247,11 +247,11 @@ function clamp01nan1!(img::AbstractArray{<:Colorant})
 end
 
 const colormaps = Dict{Spaces, Vector{RGB{Float64}}}(
-    HSL   => map(RGB, HSL(i, 1.0, 0.5) for i = range(-60, 300, 2^10)),
+    HSL => map(RGB, HSL(i, 1.0, 0.5) for i = range(-60, 300, 2^10)),
 )
 
-colors_compat || push!(colormaps,
-    Oklch => map(RGB, Oklch(0.5, chroma, i) for i = range(-30, 330, 2^10))
-)
+if !colors_compat
+    colormaps[Oklch] = map(RGB, Oklch(0.5, chroma, i) for i = range(-30, 330, 2^10))
+end
 
 end
