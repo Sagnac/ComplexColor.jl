@@ -114,7 +114,7 @@ Plot a complex number array `s` within the `x` and `y` limits using domain color
 The three-valued `septaphase` slider option on the plot will partition the phase using only 6 colors (green, cyan, blue, magenta, red, yellow) either by thresholding or by rounding, depending on the setting; the default off position plots a gradient phase.
 """
 function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
-                      color::Spaces = default; title::AbstractString = L"s")
+                      color::Spaces = default; title::AbstractString = L"f(z)")
     xlen = length(x)
     ylen = length(y)
     (xlen, ylen) == size(s) || error("Length mismatch.") 
@@ -128,8 +128,8 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     arg_ticks = (-π:π:π, [L"-\pi", L"0", L"\pi"])
     fig = Figure(size = (600, 532))
     axis = Axis(fig[1,1]; title, titlesize = 21,
-                xlabel = L"Re(z)", xlabelsize = 16,
-                ylabel = L"Im(z)", ylabelsize = 16,
+                xlabel = L"Re", xlabelsize = 16,
+                ylabel = L"Im", ylabelsize = 16,
                 xticks, yticks)
     r = abs.(s)
     ϕ = degrees(s)
@@ -150,7 +150,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     modulus_contours = draw_modulus_contours(axis, r)
     colormap = colormaps[color]
     Colorbar(fig[1,2]; colormap, limits = (-π, π), ticks = arg_ticks,
-             label = "Arg(s)")
+             label = "Arg")
     grid = GridLayout(fig[2,:])
     modulus_toggle = Toggle(fig; active = true)
     phase_toggle = Toggle(fig; active = false)
