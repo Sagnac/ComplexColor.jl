@@ -1,7 +1,7 @@
 module ComplexColor
 
 export complex_color, complex_plot,
-       @L_str, @iv_str, OpenInterval, ±, (..),
+       @L_str, @iv_str, Interval, OpenInterval, ±, (..),
        RGB, HSL, Oklch
 
 using Printf
