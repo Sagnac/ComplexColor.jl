@@ -119,6 +119,8 @@ function draw_phase_contours(axis, ϕ, colormap)
     contour!(axis, ϕ; levels = -180:90:180, colormap, inspectable = false)
 end
 
+switch_button_color(state) = state ? RGBf(0.0, 1.0, 1.0) : RGBf(0.94, 0.94, 0.94)
+
 """
     complex_plot(x, y, s [,color = `$default`]; [title])
 
@@ -165,35 +167,39 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     colormap = colormaps[color]
     Colorbar(fig[1,3]; colormap, limits = (-π, π), ticks = arg_ticks,
              label = "Arg")
-    grid = GridLayout(fig[2,2])
+    grid1 = GridLayout(fig[1,1]; tellheight = false, valign = :bottom)
+    grid2 = GridLayout(fig[2,2])
+    modulus_on = Observable(false)
+    phase_on = Observable(false)
+    modulus_btn_clr = lift(switch_button_color, modulus_on)
+    phase_btn_clr = lift(switch_button_color, phase_on)
+    modulus_button = Button(fig; buttoncolor = modulus_btn_clr, label = "modulus",
+                            halign = :right)
+    phase_button = Button(fig; buttoncolor = phase_btn_clr, label = "phase",
+                          halign = :right)
     modulus_contours_toggle = Toggle(fig; active = true)
     phase_contours_toggle = Toggle(fig; active = false)
-    slider_attr = (; format = "{:.0s}", linewidth = 12, halign = :left)
-    slider_grid = SliderGrid(fig[1,1],
-        (; label = "modulus", range = 1:2, width = 32, slider_attr...),
-        (; label = "phase", range = 1:2, width = 32, slider_attr...),
-        (; label = "septaphase", range = 1:3, width = 48, slider_attr...);
-        tellheight = false, valign = :bottom
-    )
-    modulus_slider, phase_slider, septaphase_slider = slider_grid.sliders
-    grid[1,1] = grid!([Label(fig, "phase contours") phase_contours_toggle])
-    grid[1,2] = grid!([Label(fig, "modulus contours") modulus_contours_toggle])
-    function reset_slider(slider)
-        slider.value[] == 2 && set_close_to!(slider, 1)
-        return
-    end
+    septaphase_slider = Slider(fig; range = 1:3, width = 48,
+                               linewidth = 12, halign = :left)
+    grid1[1,1] = modulus_button
+    grid1[2,1] = phase_button
+    grid1[3,1] = grid!([Label(fig, "septaphase") septaphase_slider])
+    grid2[1,1] = grid!([Label(fig, "phase contours") phase_contours_toggle])
+    grid2[1,2] = grid!([Label(fig, "modulus contours") modulus_contours_toggle])
     on(septaphase_slider.value) do value
-        reset_slider(modulus_slider)
-        reset_slider(phase_slider)
+        modulus_on[] = false
+        phase_on[] = false
         prev_img = img[3][] = color_matrices[value]
     end
-    on(modulus_slider.value) do value
-        reset_slider(phase_slider)
-        img[3][] = value == 2 ? color_matrices[4] : prev_img
+    on(modulus_button.clicks) do _
+        phase_on[] = false
+        modulus_on[] = !modulus_on[]
+        img[3][] = modulus_on[] ? color_matrices[4] : prev_img
     end
-    on(phase_slider.value) do value
-        reset_slider(modulus_slider)
-        img[3][] = value == 2 ? color_matrices[5] : prev_img
+    on(phase_button.clicks) do _
+        modulus_on[] = false
+        phase_on[] = !phase_on[]
+        img[3][] = phase_on[] ? color_matrices[5] : prev_img
     end
     on(phase_contours_toggle.active) do active
         if active
