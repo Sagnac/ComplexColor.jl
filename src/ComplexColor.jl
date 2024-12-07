@@ -52,8 +52,17 @@ end
 
 function complex_color(s::ComplexArray, ::Septaphase, color::Spaces)
     t = to_color(s, color)
+    color_matrices = Vector{Matrix{RGB}}(undef, 5)
     t1, t2, t3 = revif(t, color)
-    [to_RGB(revif((t1, t2, H), color), color) for H ∈ (t3, septaphase(t3, color)...)]
+    rounded, thresholded = septaphase(t3, color)
+    _0_ = zeros(eltype(t1), size(t1))
+    ϕ01 = revif((normalize_phase(t3, color), _0_, _0_), color)
+    color_matrices[1] = to_RGB(t, color)
+    color_matrices[2] = to_RGB(revif((t1, t2, rounded), color), color)
+    color_matrices[3] = to_RGB(revif((t1, t2, thresholded), color), color)
+    color_matrices[4] = to_RGB(revif((t1, _0_, _0_), color), color)
+    color_matrices[5] = to_RGB(ϕ01, color)
+    return color_matrices
 end
 
 revif(t::NTuple{3, RealArray}, color::Spaces) = color == HSL ? reverse(t) : t
@@ -69,6 +78,10 @@ degrees(s) = @. rad2deg(angle(s))
 mod360(s::RealArray, offset) = @. mod(s + offset, 360)
 
 mod360(s::ComplexArray, offset) = mod360(degrees(s), offset)
+
+normalize_phase(H, color::Type{Oklch}) = mod360(H, -150) / 360
+
+normalize_phase(H, color::Type{HSL}) = mod360(H, -120) / 360
 
 function to_color(s::ComplexArray, color::Type{Oklch})
     L = Λ(s)
@@ -127,7 +140,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     yticks = (range(1, ylen, nticks), yticklabels)
     arg_ticks = (-π:π:π, [L"-\pi", L"0", L"\pi"])
     fig = Figure(size = (600, 532))
-    axis = Axis(fig[1,1]; title, titlesize = 21,
+    axis = Axis(fig[1,2]; title, titlesize = 21,
                 xlabel = L"Re", xlabelsize = 16,
                 ylabel = L"Im", ylabelsize = 16,
                 xticks, yticks)
@@ -146,39 +159,60 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     end
     color_matrices = complex_color(s, Septaphase(), color)
     img = image!(axis, color_matrices[1]; inspector_label = inspector)
+    prev_img = color_matrices[1]
     local phase_contours
     modulus_contours = draw_modulus_contours(axis, r)
     colormap = colormaps[color]
-    Colorbar(fig[1,2]; colormap, limits = (-π, π), ticks = arg_ticks,
+    Colorbar(fig[1,3]; colormap, limits = (-π, π), ticks = arg_ticks,
              label = "Arg")
-    grid = GridLayout(fig[2,:])
-    modulus_toggle = Toggle(fig; active = true)
-    phase_toggle = Toggle(fig; active = false)
-    septaphase_slider = Slider(fig; range = 1:3, width = phase_toggle.width[] * 1.5)
-    grid[1,1] = grid!([Label(fig, "septaphase") septaphase_slider])
-    grid[1,2] = grid!([Label(fig, "phase contours") phase_toggle])
-    grid[1,3] = grid!([Label(fig, "modulus contours") modulus_toggle])
-    on(septaphase_slider.value) do value
-        img[3][] = color_matrices[value]
+    grid = GridLayout(fig[2,2])
+    modulus_contours_toggle = Toggle(fig; active = true)
+    phase_contours_toggle = Toggle(fig; active = false)
+    slider_attr = (; format = "{:.0s}", linewidth = 12, halign = :left)
+    slider_grid = SliderGrid(fig[1,1],
+        (; label = "modulus", range = 1:2, width = 32, slider_attr...),
+        (; label = "phase", range = 1:2, width = 32, slider_attr...),
+        (; label = "septaphase", range = 1:3, width = 48, slider_attr...);
+        tellheight = false, valign = :bottom
+    )
+    modulus_slider, phase_slider, septaphase_slider = slider_grid.sliders
+    grid[1,1] = grid!([Label(fig, "phase contours") phase_contours_toggle])
+    grid[1,2] = grid!([Label(fig, "modulus contours") modulus_contours_toggle])
+    function reset_slider(slider)
+        slider.value[] == 2 && set_close_to!(slider, 1)
+        return
     end
-    on(phase_toggle.active) do active
+    on(septaphase_slider.value) do value
+        reset_slider(modulus_slider)
+        reset_slider(phase_slider)
+        prev_img = img[3][] = color_matrices[value]
+    end
+    on(modulus_slider.value) do value
+        reset_slider(phase_slider)
+        img[3][] = value == 2 ? color_matrices[4] : prev_img
+    end
+    on(phase_slider.value) do value
+        reset_slider(modulus_slider)
+        img[3][] = value == 2 ? color_matrices[5] : prev_img
+    end
+    on(phase_contours_toggle.active) do active
         if active
             phase_contours = draw_phase_contours(axis, ϕ, colormap)
-        else    
+        else
             delete!(axis, phase_contours)
         end
     end
-    on(modulus_toggle.active) do active
+    on(modulus_contours_toggle.active) do active
         if active
             modulus_contours = draw_modulus_contours(axis, r)
-        else    
+        else
             delete!(axis, modulus_contours)
         end
     end
     ar = true
     function aspect_control()
         axis.aspect = ar ? DataAspect() : nothing
-        colsize!(fig.layout, 1, ar ? Aspect(1, xlen / ylen) : Auto(true, 1.0))
+        colsize!(fig.layout, 2, ar ? Aspect(1, xlen / ylen) : Auto(false, 1.0))
         resize_to_layout!(fig)
     end
     onmouserightup(addmouseevents!(fig.scene)) do _
