@@ -56,12 +56,12 @@ function complex_color(s::ComplexArray, ::Septaphase, color::Spaces)
     t1, t2, t3 = revif(t, color)
     rounded, thresholded = septaphase(t3, color)
     _0_ = zeros(eltype(t1), size(t1))
-    ϕ01 = revif((normalize_phase(t3, color), _0_, _0_), color)
+    ϕ01 = normalize_phase(t3, color)
     color_matrices[1] = to_RGB(t, color)
-    color_matrices[2] = to_RGB(revif((t1, t2, rounded), color), color)
-    color_matrices[3] = to_RGB(revif((t1, t2, thresholded), color), color)
-    color_matrices[4] = to_RGB(revif((t1, _0_, _0_), color), color)
-    color_matrices[5] = to_RGB(ϕ01, color)
+    color_matrices[2] = rev_to_RGB(t1, t2, rounded; color)
+    color_matrices[3] = rev_to_RGB(t1, t2, thresholded; color)
+    color_matrices[4] = rev_to_RGB(t1, _0_, _0_; color)
+    color_matrices[5] = rev_to_RGB(ϕ01, _0_, _0_; color)
     return color_matrices
 end
 
@@ -98,6 +98,11 @@ function to_color(s::ComplexArray, color::Type{HSL})
 end
 
 to_RGB(t, color) = map(RGB, color.(t...)) |> clamp01nan1!
+
+function rev_to_RGB(t...; color)
+    t = revif(t, color)
+    to_RGB(t, color)
+end
 
 function septaphase(H, color::Spaces)
     if color == Oklch
