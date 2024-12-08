@@ -60,8 +60,8 @@ function complex_color(s::ComplexArray, ::Septaphase, color::Spaces)
     color_matrices[1] = to_RGB(t, color)
     color_matrices[2] = rev_to_RGB(t1, t2, rounded; color)
     color_matrices[3] = rev_to_RGB(t1, t2, thresholded; color)
-    color_matrices[4] = rev_to_RGB(t1, _0_, _0_; color)
-    color_matrices[5] = rev_to_RGB(ϕ01, _0_, _0_; color)
+    color_matrices[4] = to_RGB((_0_, _0_, t1), HSL)
+    color_matrices[5] = to_RGB((_0_, _0_, ϕ01), HSL)
     return color_matrices
 end
 
