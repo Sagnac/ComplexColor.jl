@@ -37,3 +37,10 @@ x = y = -2..2
 f(z) = inv(z)
 complex_plot(x, y, f)
 ```
+
+```julia
+# for an arbitrary complex function of two real variables (ℝ² → ℂ)
+x = y = -3:0.01:3
+f(x, y) = ei2pi(x * y)
+complex_plot(x, y, f, Real; xlabel = "x", ylabel = "y")
+```

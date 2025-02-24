@@ -20,6 +20,9 @@ const chroma = 0.35
 # base interval range length
 const n = 1000
 
+const modulus_levels = exp2.(-3:15)
+const modulus_colormap = Reverse(:acton)
+
 struct Septaphase end
 
 const colors_compat = pkgversion(Colors) <= v"0.12.11"
@@ -115,8 +118,8 @@ function septaphase(H, color::Spaces)
 end
 
 function draw_modulus_contours(axis, r)
-    levels = exp2.(-3:15)
-    colormap = Reverse(:acton)
+    levels = modulus_levels
+    colormap = modulus_colormap
     contour!(axis, r; levels, colormap, inspectable = false)
 end
 
@@ -134,7 +137,8 @@ Plot a complex number array `s` within the `x` and `y` limits using domain color
 The three-valued `septaphase` slider option on the plot will partition the phase using only 6 colors (green, cyan, blue, magenta, red, yellow) either by thresholding or by rounding, depending on the setting; the default off position plots a gradient phase.
 """
 function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
-                      color::Spaces = default; title::AbstractString = L"f(z)")
+                      color::Spaces = default; title::AbstractString = L"f(z)",
+                      xlabel = L"Re", ylabel = L"Im")
     xlen = length(x)
     ylen = length(y)
     (xlen, ylen) == size(s) || error("Length mismatch.") 
@@ -148,8 +152,8 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     arg_ticks = (-π:π:π, [L"-\pi", L"0", L"\pi"])
     fig = Figure(size = (600, 532))
     axis = Axis(fig[1,2]; title, titlesize = 21,
-                xlabel = L"Re", xlabelsize = 16,
-                ylabel = L"Im", ylabelsize = 16,
+                xlabel, xlabelsize = 16,
+                ylabel, ylabelsize = 16,
                 xticks, yticks)
     r = abs.(s)
     ϕ = degrees(s)
@@ -168,7 +172,8 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     img = image!(axis, color_matrices[1]; inspector_label = inspector)
     prev_img = color_matrices[1]
     local phase_contours
-    modulus_contours = draw_modulus_contours(axis, r)
+    local modulus_contours
+    r_const = all(isapprox(first(r)), r)
     colormap = colormaps[color]
     Colorbar(fig[1,3]; colormap, limits = (-π, π), ticks = arg_ticks,
              label = "Arg")
@@ -212,13 +217,16 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
         else
             delete!(axis, phase_contours)
         end
+        return
     end
-    on(modulus_contours_toggle.active) do active
+    on(modulus_contours_toggle.active; update = true) do active
+        r_const && return
         if active
             modulus_contours = draw_modulus_contours(axis, r)
         else
             delete!(axis, modulus_contours)
         end
+        return
     end
     ar = true
     function aspect_control()
@@ -254,8 +262,13 @@ end
 # generic methods where f is a complex function
 function complex_plot(x::AbstractVector, y::AbstractVector, f,
                       color::Spaces = default; kw...)
-    z = complex.(x, y')
-    s = f.(z)
+    s = @. f(complex(x, y'))
+    complex_plot(x, y, s, color; kw...)
+end
+
+function complex_plot(x::AbstractVector, y::AbstractVector, f, ::Type{Real},
+                      color::Spaces = default; kw...)
+    s = f.(x, y')
     complex_plot(x, y, s, color; kw...)
 end
 
