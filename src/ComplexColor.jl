@@ -55,7 +55,7 @@ end
 
 function complex_color(s::ComplexArray, ::Septaphase, color::Spaces)
     t = to_color(s, color)
-    color_matrices = Vector{Matrix{RGB}}(undef, 5)
+    color_matrices = Vector{Matrix{RGB}}(undef, 7)
     t1, t2, t3 = revif(t, color)
     rounded, thresholded = septaphase(t3, color)
     _0_ = zeros(eltype(t1), size(t1))
@@ -65,6 +65,8 @@ function complex_color(s::ComplexArray, ::Septaphase, color::Spaces)
     color_matrices[3] = rev_to_RGB(t1, t2, thresholded; color)
     color_matrices[4] = to_RGB((_0_, _0_, t1), HSL)
     color_matrices[5] = to_RGB((_0_, _0_, ϕ01), HSL)
+    color_matrices[6] = to_RGB((_0_, _0_, real(s)), HSL)
+    color_matrices[7] = to_RGB((_0_, _0_, imag(s)), HSL)
     return color_matrices
 end
 
@@ -177,39 +179,36 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     colormap = colormaps[color]
     Colorbar(fig[1,3]; colormap, limits = (-π, π), ticks = arg_ticks,
              label = "Arg")
-    grid1 = GridLayout(fig[1,1]; tellheight = false, valign = :bottom)
-    grid2 = GridLayout(fig[2,2])
-    modulus_on = Observable(false)
-    phase_on = Observable(false)
-    modulus_btn_clr = lift(switch_button_color, modulus_on)
-    phase_btn_clr = lift(switch_button_color, phase_on)
-    modulus_button = Button(fig; buttoncolor = modulus_btn_clr, label = "modulus",
-                            halign = :right)
-    phase_button = Button(fig; buttoncolor = phase_btn_clr, label = "phase",
-                          halign = :right)
+    grid1 = GridLayout(fig[1,1]; tellheight = false, valign = :center)
+    grid2 = GridLayout(fig[1,1]; tellheight = false, valign = :bottom)
+    grid3 = GridLayout(fig[2,2])
+    n_btns = 1:4
+    btn_active = [Observable(false) for i = n_btns]
+    btn_clr = [lift(switch_button_color, btn) for btn in btn_active]
+    btn_labels = ["modulus", "phase", "real", "imaginary"]
+    buttons = [Button(fig; buttoncolor = btn_clr[i], label = btn_labels[i],
+                      halign = :right) for i = n_btns]
     modulus_contours_toggle = Toggle(fig; active = true)
     phase_contours_toggle = Toggle(fig; active = false)
     septaphase_slider = Slider(fig; range = 1:3, width = 48,
                                linewidth = 12, halign = :left)
-    grid1[1,1] = modulus_button
-    grid1[2,1] = phase_button
-    grid1[3,1] = grid!([Label(fig, "septaphase") septaphase_slider])
-    grid2[1,1] = grid!([Label(fig, "phase contours") phase_contours_toggle])
-    grid2[1,2] = grid!([Label(fig, "modulus contours") modulus_contours_toggle])
+    for i = n_btns
+        grid1[i,1] = buttons[i]
+    end
+    grid2[5,1] = grid!([Label(fig, "septaphase") septaphase_slider])
+    grid3[1,1] = grid!([Label(fig, "phase contours") phase_contours_toggle])
+    grid3[1,2] = grid!([Label(fig, "modulus contours") modulus_contours_toggle])
     on(septaphase_slider.value) do value
-        modulus_on[] = false
-        phase_on[] = false
+        setindex!.(btn_active, false)
         prev_img = img[3][] = color_matrices[value]
     end
-    on(modulus_button.clicks) do _
-        phase_on[] = false
-        modulus_on[] = !modulus_on[]
-        img[3][] = modulus_on[] ? color_matrices[4] : prev_img
-    end
-    on(phase_button.clicks) do _
-        modulus_on[] = false
-        phase_on[] = !phase_on[]
-        img[3][] = phase_on[] ? color_matrices[5] : prev_img
+    for i = n_btns
+        on(buttons[i].clicks) do _
+            btn = btn_active[i]
+            setindex!.(btn_active[n_btns .!= i], false)
+            btn[] = !btn[]
+            img[3][] = btn[] ? color_matrices[i+3] : prev_img
+        end
     end
     on(phase_contours_toggle.active) do active
         if active
