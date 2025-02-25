@@ -162,14 +162,22 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
                 xticks, yticks)
     r = abs.(s)
     ϕ = degrees(s)
+    u, v = reim(s)
+    function select(i, j)
+        if uv[]
+            return @sprintf("u: %.4G, v: %.4G", u[i,j], v[i,j])
+        else
+            return @sprintf("r: %.4G, ϕ: %.2f\u00b0", r[i,j], ϕ[i,j])
+        end
+    end
     function inspector(_, inds, _)
         i, j = round.(Int, inds)
         str = @sprintf(
             """
             x: %.4G, y: %.4G
-            r: %.4G, ϕ: %.2f\u00b0
+            %s
             """,
-            x[i], y[j], r[i,j], ϕ[i,j]
+            x[i], y[j], select(i, j)
         )
         replace(str, '-' => '\u2212')
     end
@@ -189,6 +197,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     btn_labels = ["modulus", "phase", "real", "imaginary"]
     buttons = [Button(fig; buttoncolor = btn_clr[i], label = btn_labels[i],
                       halign = :right) for i = n_btns]
+    uv = @lift($(btn_active[3]) || $(btn_active[4]))
     modulus_contours_toggle = Toggle(fig; active = true)
     phase_contours_toggle = Toggle(fig; active = false)
     septaphase_slider = Slider(fig; range = 1:3, width = 48,
