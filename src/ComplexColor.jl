@@ -173,9 +173,8 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     color_matrices = complex_color(s, Septaphase(), color)
     img = image!(axis, color_matrices[1]; inspector_label = inspector)
     prev_img = color_matrices[1]
-    local phase_contours
-    local modulus_contours
-    r_const = all(isapprox(first(r)), r)
+    local phase_contours, modulus_contours
+    r_const, ϕ_const = [all(isapprox(first(i)), i) for i in (r, ϕ)]
     colormap = colormaps[color]
     Colorbar(fig[1,3]; colormap, limits = (-π, π), ticks = arg_ticks,
              label = "Arg")
@@ -211,6 +210,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
         end
     end
     on(phase_contours_toggle.active) do active
+        ϕ_const && return
         if active
             phase_contours = draw_phase_contours(axis, ϕ, colormap)
         else
