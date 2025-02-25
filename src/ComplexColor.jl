@@ -179,8 +179,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     Colorbar(fig[1,3]; colormap, limits = (-π, π), ticks = arg_ticks,
              label = "Arg")
     grid1 = GridLayout(fig[1,1]; tellheight = false, valign = :center)
-    grid2 = GridLayout(fig[1,1]; tellheight = false, valign = :bottom)
-    grid3 = GridLayout(fig[2,2])
+    grid2 = GridLayout(fig[2,2])
     n_btns = 1:4
     btn_active = [Observable(false) for i = n_btns]
     btn_clr = [lift(switch_button_color, btn) for btn in btn_active]
@@ -194,9 +193,10 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     for i = n_btns
         grid1[i,1] = buttons[i]
     end
-    grid2[5,1] = grid!([Label(fig, "septaphase") septaphase_slider])
-    grid3[1,1] = grid!([Label(fig, "phase contours") phase_contours_toggle])
-    grid3[1,2] = grid!([Label(fig, "modulus contours") modulus_contours_toggle])
+    fig[1,1] = grid!([Label(fig, "septaphase") septaphase_slider];
+                     tellheight = false, valign = :bottom)
+    grid2[1,1] = grid!([Label(fig, "phase contours") phase_contours_toggle])
+    grid2[1,2] = grid!([Label(fig, "modulus contours") modulus_contours_toggle])
     on(septaphase_slider.value) do value
         setindex!.(btn_active, false)
         prev_img = img[3][] = color_matrices[value]
