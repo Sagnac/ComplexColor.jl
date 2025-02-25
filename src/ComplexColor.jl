@@ -60,13 +60,14 @@ function complex_color(s::ComplexArray, ::Septaphase, color::Spaces)
     rounded, thresholded = septaphase(t3, color)
     _0_ = zeros(eltype(t1), size(t1))
     ϕ01 = normalize_phase(t3, color)
+    u, v = ξ.(reim(s))
     color_matrices[1] = to_RGB(t, color)
     color_matrices[2] = rev_to_RGB(t1, t2, rounded; color)
     color_matrices[3] = rev_to_RGB(t1, t2, thresholded; color)
     color_matrices[4] = to_RGB((_0_, _0_, t1), HSL)
     color_matrices[5] = to_RGB((_0_, _0_, ϕ01), HSL)
-    color_matrices[6] = to_RGB((_0_, _0_, real(s)), HSL)
-    color_matrices[7] = to_RGB((_0_, _0_, imag(s)), HSL)
+    color_matrices[6] = to_RGB((_0_, _0_, u), HSL)
+    color_matrices[7] = to_RGB((_0_, _0_, v), HSL)
     return color_matrices
 end
 
@@ -77,6 +78,8 @@ function Λ(s)
     _1_ = one(eltype(r2))
     @. r2 / (_1_ + r2)
 end
+
+ξ(w) = @. inv(1.0 + exp(-w))
 
 degrees(s) = @. rad2deg(angle(s))
 
