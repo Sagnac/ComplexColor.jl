@@ -162,15 +162,15 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
                 xticks, yticks)
     r = abs.(s)
     ϕ = degrees(s)
+    u, v = reim(s)
     function inspector(_, inds, _)
         i, j = round.(Int, inds)
-        str = @sprintf(
-            """
-            x: %.4G, y: %.4G
-            r: %.4G, ϕ: %.2f\u00b0
-            """,
-            x[i], y[j], r[i,j], ϕ[i,j]
-        )
+        if uv[]
+            select = @sprintf("u: %.4G, v: %.4G", u[i,j], v[i,j])
+        else
+            select = @sprintf("r: %.4G, ϕ: %.2f\u00b0", r[i,j], ϕ[i,j])
+        end
+        str = @sprintf("x: %.4G, y: %.4G\n%s", x[i], y[j], select)
         replace(str, '-' => '\u2212')
     end
     color_matrices = complex_color(s, Septaphase(), color)
@@ -189,6 +189,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     btn_labels = ["modulus", "phase", "real", "imaginary"]
     buttons = [Button(fig; buttoncolor = btn_clr[i], label = btn_labels[i],
                       halign = :right) for i = n_btns]
+    uv = @lift($(btn_active[3]) || $(btn_active[4]))
     modulus_contours_toggle = Toggle(fig; active = true)
     phase_contours_toggle = Toggle(fig; active = false)
     septaphase_slider = Slider(fig; range = 1:3, width = 48,
