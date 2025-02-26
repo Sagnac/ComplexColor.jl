@@ -13,6 +13,8 @@ using IntervalSets
 const ComplexArray = AbstractArray{<:Complex}
 const RealArray = AbstractArray{<:Real}
 
+const VecOrInterval = Union{AbstractVector, Interval}
+
 const Spaces = Union{Type{Oklch}, Type{HSL}}
 
 const chroma = 0.35
@@ -280,20 +282,20 @@ end
 
 adjust_len(x, y, len) = round(Int, len * Δ(x) / Δ(y))
 
-function complex_plot(x::Interval, y::Interval, f, color::Spaces = default; kw...)
-    x = range(x, adjust_len(x, y, n))
-    y = range(y, n)
+ranges(x::Interval, y::Interval) = (range(x, adjust_len(x, y, n)), range(y, n))
+ranges(x::AbstractVector, y::Interval) = (x, range(y, adjust_len(y, x, length(x))))
+ranges(x::Interval, y::AbstractVector) = (range(x, adjust_len(x, y, length(y))), y)
+
+function complex_plot(x::VecOrInterval, y::VecOrInterval, f,
+                      color::Spaces = default; kw...)
+    x, y = ranges(x, y)
     complex_plot(x, y, f, color; kw...)
 end
 
-function complex_plot(x::AbstractVector, y::Interval, f, color::Spaces = default;
-                      kw...)
-    complex_plot(x, range(y, adjust_len(y, x, length(x))), f, color; kw...)
-end
-
-function complex_plot(x::Interval, y::AbstractVector, f, color::Spaces = default;
-                      kw...)
-    complex_plot(range(x, adjust_len(x, y, length(y))), y, f, color; kw...)
+function complex_plot(x::VecOrInterval, y::VecOrInterval, f, ::Type{Real},
+                      color::Spaces = default; kw...)
+    x, y = ranges(x, y)
+    complex_plot(x, y, f, Real, color; kw...)
 end
 
 function complex_plot(z::ComplexArray, f, color::Spaces = default; kw...)
