@@ -25,8 +25,6 @@ const n = 1000
 const modulus_levels = exp2.(-3:15)
 const modulus_colormap = Reverse(:acton)
 
-struct Septaphase end
-
 const colors_compat = pkgversion(Colors) <= v"0.12.11"
 
 const default = colors_compat ? HSL : Oklch
@@ -52,58 +50,60 @@ julia> complex_color(z)
 ```
 """
 function complex_color(s::ComplexArray, color::Spaces = default)
-    to_RGB(to_color(s, color), color)
+    to_RGB(to_color(polar_coords(s)..., color), color)
 end
 
-function complex_color(s::ComplexArray, ::Septaphase, color::Spaces)
-    t = to_color(s, color)
+function complex_color(r, ϕ, u, v, color::Spaces)
+    t = to_color(r, ϕ, color)
     color_matrices = Vector{Matrix{RGB}}(undef, 7)
     t1, t2, t3 = revif(t, color)
     rounded, thresholded = septaphase(t3, color)
     _0_ = zeros(eltype(t1), size(t1))
-    ϕ01 = normalize_phase(t3, color)
-    u, v = ξ.(reim(s))
+    ϕ = mod.(ϕ, 360) / 360
     color_matrices[1] = to_RGB(t, color)
     color_matrices[2] = rev_to_RGB(t1, t2, rounded; color)
     color_matrices[3] = rev_to_RGB(t1, t2, thresholded; color)
     color_matrices[4] = to_RGB((_0_, _0_, t1), HSL)
-    color_matrices[5] = to_RGB((_0_, _0_, ϕ01), HSL)
-    color_matrices[6] = to_RGB((_0_, _0_, u), HSL)
-    color_matrices[7] = to_RGB((_0_, _0_, v), HSL)
+    color_matrices[5] = to_RGB((_0_, _0_, ϕ), HSL)
+    color_matrices[6] = to_RGB((_0_, _0_, ξ(u)), HSL)
+    color_matrices[7] = to_RGB((_0_, _0_, ξ(v)), HSL)
     return color_matrices
 end
 
 revif(t::NTuple{3, RealArray}, color::Spaces) = color == HSL ? reverse(t) : t
 
-function Λ(s)
-    r2 = abs2.(s)
-    _1_ = one(eltype(r2))
-    @. r2 / (_1_ + r2)
+function Λ(r)
+    r2 = r .^ 2
+    r2 ./ (one(eltype(r2)) .+ r2)
 end
 
-ξ(w) = @. inv(1.0 + exp(-w))
+ξ(w) = inv.(one(eltype(w)) .+ exp.(-w))
 
-degrees(s) = @. rad2deg(angle(s))
+mod360(a::RealArray, offset) = @. mod(a + offset, 360)
 
-mod360(s::RealArray, offset) = @. mod(s + offset, 360)
+function polar_coords(s::ComplexArray)
+    r = abs.(s)
+    ϕ = @. rad2deg(angle(s))
+    return r, ϕ
+end
 
-mod360(s::ComplexArray, offset) = mod360(degrees(s), offset)
+function coords(s::ComplexArray)
+    r, ϕ = polar_coords(s)
+    u, v = reim(s)
+    return r, ϕ, u, v
+end
 
-normalize_phase(H, color::Type{Oklch}) = mod360(H, -150) / 360
-
-normalize_phase(H, color::Type{HSL}) = mod360(H, -120) / 360
-
-function to_color(s::ComplexArray, color::Type{Oklch})
-    L = Λ(s)
+function to_color(r, ϕ, color::Type{Oklch})
+    L = Λ(r)
     C = fill(chroma, size(L))
-    H = mod360(s, 150)
+    H = mod360(ϕ, 150)
     return L, C, H
 end
 
-function to_color(s::ComplexArray, color::Type{HSL})
-    H = mod360(s, 120)
+function to_color(r, ϕ, color::Type{HSL})
+    H = mod360(ϕ, 120)
     S = ones(size(H))
-    L = Λ(s)
+    L = Λ(r)
     return H, S, L
 end
 
@@ -162,9 +162,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
                 xlabel, xlabelsize = 16,
                 ylabel, ylabelsize = 16,
                 xticks, yticks)
-    r = abs.(s)
-    ϕ = degrees(s)
-    u, v = reim(s)
+    r, ϕ, u, v = coords(s)
     function inspector(_, inds, _)
         i, j = round.(Int, inds)
         if uv[]
@@ -175,7 +173,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
         str = @sprintf("x: %.4G, y: %.4G\n%s", x[i], y[j], select)
         replace(str, '-' => '\u2212')
     end
-    color_matrices = complex_color(s, Septaphase(), color)
+    color_matrices = complex_color(r, ϕ, u, v, color)
     img = image!(axis, color_matrices[1]; inspector_label = inspector)
     prev_img = color_matrices[1]
     local phase_contours, modulus_contours
