@@ -20,7 +20,7 @@ const Spaces = Union{Type{Oklch}, Type{HSL}}
 const chroma = 0.35
 
 # base interval range length
-const n = 1000
+const n = 500
 
 const modulus_levels = exp2.(-3:15)
 const modulus_colormap = Reverse(:acton)
@@ -30,6 +30,15 @@ const colors_compat = pkgversion(Colors) <= v"0.12.11"
 const default = colors_compat ? HSL : Oklch
 
 __init__() = colors_compat && @warn "Oklch color is not available in this version."
+
+@kwdef struct Coordinates
+    x::Vector{Float64}
+    y::Vector{Float64}
+    r::Matrix{Float64}
+    ϕ::Matrix{Float64}
+    u::Matrix{Float64}
+    v::Matrix{Float64}
+end
 
 """
     complex_color(s [, color = `$default`])
@@ -109,7 +118,7 @@ end
 
 to_RGB(t, color) = map(RGB, color.(t...)) |> clamp01nan1!
 
-function rev_to_RGB(t...; color)
+function rev_to_RGB(t...; color)::Matrix{RGB}
     t = revif(t, color)
     to_RGB(t, color)
 end
@@ -136,6 +145,24 @@ end
 
 switch_button_color(state) = state ? RGBf(0.0, 1.0, 1.0) : RGBf(0.94, 0.94, 0.94)
 
+function inspector(inds, params, uv)
+    (; x, y, r, ϕ, u, v) = params
+    i, j = round.(Int, inds)
+    if uv[]
+        select = @sprintf("u: %.4G, v: %.4G", u[i,j], v[i,j])
+    else
+        select = @sprintf("r: %.4G, ϕ: %.2f\u00b0", r[i,j], ϕ[i,j])
+    end
+    str = @sprintf("x: %.4G, y: %.4G\n%s", x[i], y[j], select)
+    replace(str, '-' => '\u2212')
+end
+
+function aspect_control!(ar, axis, fig, xlen, ylen)
+    axis.aspect = ar ? DataAspect() : nothing
+    colsize!(fig.layout, 2, ar ? Aspect(1, xlen / ylen) : Auto(false, 1.0))
+    resize_to_layout!(fig)
+end
+
 """
     complex_plot(x, y, s [,color = `$default`]; [title])
 
@@ -158,23 +185,14 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     yticks = (range(1, ylen, nticks), yticklabels)
     arg_ticks = (-π:π:π, [L"-\pi", L"0", L"\pi"])
     fig = Figure(size = (600, 532))
-    axis = Axis(fig[1,2]; title, titlesize = 21,
-                xlabel, xlabelsize = 16,
-                ylabel, ylabelsize = 16,
-                xticks, yticks)
+    axis::Axis = Axis(fig[1,2]; title, titlesize = 21,
+                      xlabel, xlabelsize = 16,
+                      ylabel, ylabelsize = 16,
+                      xticks, yticks)
     r, ϕ, u, v = coords(s)
-    function inspector(_, inds, _)
-        i, j = round.(Int, inds)
-        if uv[]
-            select = @sprintf("u: %.4G, v: %.4G", u[i,j], v[i,j])
-        else
-            select = @sprintf("r: %.4G, ϕ: %.2f\u00b0", r[i,j], ϕ[i,j])
-        end
-        str = @sprintf("x: %.4G, y: %.4G\n%s", x[i], y[j], select)
-        replace(str, '-' => '\u2212')
-    end
     color_matrices = complex_color(r, ϕ, u, v, color)
-    img = image!(axis, color_matrices[1]; inspector_label = inspector)
+    img = image!(axis, color_matrices[1];
+                 inspector_label = (_, inds, _) -> inspector(inds, params, uv))
     prev_img = color_matrices[1]
     local phase_contours, modulus_contours
     r_const, ϕ_const = [all(isapprox(first(i)), i) for i in (r, ϕ)]
@@ -231,18 +249,14 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
         end
         return
     end
-    ar = true
-    function aspect_control()
-        axis.aspect = ar ? DataAspect() : nothing
-        colsize!(fig.layout, 2, ar ? Aspect(1, xlen / ylen) : Auto(false, 1.0))
-        resize_to_layout!(fig)
-    end
+    ar::Bool = true
     onmouserightup(addmouseevents!(fig.scene)) do _
         ispressed(fig, Keyboard.left_control) || return
         ar = !ar
-        aspect_control()
+        aspect_control!(ar, axis, fig, xlen, ylen)
     end
-    aspect_control()
+    params = Coordinates(; x, y, r, ϕ, u, v)
+    aspect_control!(ar, axis, fig, xlen, ylen)
     DataInspector(fig)
     fig
 end
