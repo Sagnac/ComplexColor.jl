@@ -22,7 +22,7 @@ const chroma = 0.35
 # base interval range length
 const n = 500
 
-const modulus_levels = exp2.(-3:15)
+const modulus_levels = exp2.(-7:15)
 const modulus_colormap = Reverse(:acton)
 
 const colors_compat = pkgversion(Colors) <= v"0.12.11"
@@ -133,8 +133,7 @@ function septaphase(H, color::Spaces)
     return rounded, thresholded
 end
 
-function draw_modulus_contours(axis, r)
-    levels = modulus_levels
+function draw_modulus_contours(axis, r, levels)
     colormap = modulus_colormap
     contour!(axis, r; levels, colormap, inspectable = false)
 end
@@ -172,7 +171,7 @@ The three-valued `septaphase` slider option on the plot will partition the phase
 """
 function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
                       color::Spaces = default; title::AbstractString = L"f(z)",
-                      xlabel = L"Re", ylabel = L"Im")
+                      xlabel = L"Re", ylabel = L"Im", levels = modulus_levels)
     xlen = length(x)
     ylen = length(y)
     (xlen, ylen) == size(s) || error("Length mismatch.") 
@@ -243,7 +242,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     on(modulus_contours_toggle.active; update = true) do active
         r_const && return
         if active
-            modulus_contours = draw_modulus_contours(axis, r)
+            modulus_contours = draw_modulus_contours(axis, r, levels)
         else
             delete!(axis, modulus_contours)
         end
