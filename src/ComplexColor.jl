@@ -171,11 +171,12 @@ The three-valued `septaphase` slider option on the plot will partition the phase
 """
 function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
                       color::Spaces = default; title::AbstractString = L"f(z)",
-                      xlabel = L"Re", ylabel = L"Im", levels = modulus_levels)
+                      xlabel = L"Re", ylabel = L"Im", levels = modulus_levels,
+                      nticks = 5, res = (600, 532), titlesize = 21,
+                      xlabelsize = 16, ylabelsize = 16)
     xlen = length(x)
     ylen = length(y)
-    (xlen, ylen) == size(s) || error("Length mismatch.") 
-    nticks = 5
+    (xlen, ylen) == size(s) || error("Length mismatch.")
     xtickrange = range(x[begin], x[end], nticks)
     ytickrange = range(y[begin], y[end], nticks)
     xticklabels = map(i -> latexstring(@sprintf("%.4G", i)), xtickrange)
@@ -183,10 +184,10 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
     xticks = (range(1, xlen, nticks), xticklabels)
     yticks = (range(1, ylen, nticks), yticklabels)
     arg_ticks = (-π:π:π, [L"-\pi", L"0", L"\pi"])
-    fig = Figure(size = (600, 532))
-    axis::Axis = Axis(fig[1,2]; title, titlesize = 21,
-                      xlabel, xlabelsize = 16,
-                      ylabel, ylabelsize = 16,
+    fig = Figure(size = res)
+    axis::Axis = Axis(fig[1,2]; title, titlesize,
+                      xlabel, xlabelsize,
+                      ylabel, ylabelsize,
                       xticks, yticks)
     r, ϕ, u, v = coords(s)
     color_matrices = complex_color(r, ϕ, u, v, color)
