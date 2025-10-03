@@ -10,7 +10,7 @@ IntervalSets = "8197267c-284f-5f27-9208-e0e47529a953"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
-GLMakie = "0.10"
+GLMakie = "0.13"
 
 [sources]
 Colors = {url = "https://github.com/Sagnac/Colors.jl", rev = "master"}
