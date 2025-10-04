@@ -64,7 +64,7 @@ function complex_color(r, ϕ, u, v, color::Spaces)
     t1, t2, t3 = revif(t, color)
     rounded, thresholded = septaphase(t3, color)
     _0_ = zeros(eltype(t1), size(t1))
-    ϕ = mod.(ϕ, 360) / 360
+    ϕ = mod.(ϕ, 360) ./ 360
     color_matrices[1] = to_RGB(t, color)
     color_matrices[2] = rev_to_RGB(t1, t2, rounded; color)
     color_matrices[3] = rev_to_RGB(t1, t2, thresholded; color)
@@ -78,8 +78,7 @@ end
 revif(t::NTuple{3, RealArray}, color::Spaces) = color == HSL ? reverse(t) : t
 
 function Λ(r)
-    r2 = r .^ 2
-    r2 ./ (one(eltype(r2)) .+ r2)
+    r .^ 2 ./ (one(eltype(r)) .+ r .^ 2)
 end
 
 ξ(w) = inv.(one(eltype(w)) .+ exp.(-w))
@@ -112,7 +111,7 @@ function to_color(r, ϕ, color::Type{HSL})
     return H, S, L
 end
 
-to_RGB(t, color) = map(RGB, color.(t...)) |> clamp01nan1!
+to_RGB(t, color) = RGB.(color.(t...)) |> clamp01nan1!
 
 function rev_to_RGB(t...; color)::Matrix{RGB}
     t = revif(t, color)
