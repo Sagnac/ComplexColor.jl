@@ -204,7 +204,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
                       halign = :right) for i = n_btns]
     uv = @lift($(btn_active[3]) || $(btn_active[4]))
     modulus_contours_toggle = Toggle(fig; active = true)
-    phase_contours_toggle = Toggle(fig; active = false)
+    phase_contours_toggle = Toggle(fig; active = true)
     septaphase_slider = Slider(fig; range = 1:3, width = 48,
                                linewidth = 12, halign = :left)
     for i = n_btns
@@ -226,7 +226,7 @@ function complex_plot(x::AbstractVector, y::AbstractVector, s::ComplexArray,
             img[3][] = btn[] ? color_matrices[i+3] : prev_img
         end
     end
-    on(phase_contours_toggle.active) do active
+    on(phase_contours_toggle.active; update = true) do active
         ϕ_const && return
         if active
             phase_contours = draw_phase_contours(axis, ϕ, colormap)

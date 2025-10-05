@@ -6,8 +6,6 @@
 
 `complex_plot(x, y, s, color = Oklch)` plots a complex number array `s` within the `x` and `y` limits using domain coloring in the HSL or perceptual OKLCH color spaces.
 
-***Note***: The phase contour lines are kinda bugged at the moment at around `±π`; these contours are not displayed by default, but can be toggled on the plot.
-
 ## Installation
 
 ```julia
